@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/fund.dart';
+import '../models/extracted_product.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
 import '../widgets/step_indicator.dart';
@@ -14,8 +15,8 @@ class SellerFundFormScreen extends StatefulWidget {
 }
 
 class _SellerFundFormScreenState extends State<SellerFundFormScreen> {
-  int _currentStep = 1;
-  static const int _totalSteps = 5;
+  int _currentStep = 0;
+  static const int _totalSteps = 6;
 
   // Step 1
   final _productNameCtrl = TextEditingController();
@@ -68,7 +69,7 @@ class _SellerFundFormScreenState extends State<SellerFundFormScreen> {
   }
 
   void _goNext() {
-    if (_currentStep < _totalSteps) {
+    if (_currentStep < _totalSteps - 1) {
       setState(() => _currentStep++);
     }
   }
@@ -76,6 +77,36 @@ class _SellerFundFormScreenState extends State<SellerFundFormScreen> {
   void _goPrev() {
     if (_currentStep > 1) {
       setState(() => _currentStep--);
+    }
+  }
+
+  Future<void> _onUrlScrapeSelected() async {
+    final result = await Navigator.pushNamed(context, '/seller/fund/url-scrape');
+    if (result is ExtractedProduct) {
+      _applyExtractedProduct(result);
+    }
+    setState(() => _currentStep = 1);
+  }
+
+  void _applyExtractedProduct(ExtractedProduct product) {
+    if (product.productName.value != null) {
+      _productNameCtrl.text = product.productName.value!;
+    }
+    if (product.description.value != null) {
+      _descriptionCtrl.text = product.description.value!;
+    }
+    if (product.category.value != null) {
+      final matched = _categories.firstWhere(
+        (c) => c.contains(product.category.value!) ||
+            product.category.value!.contains(c),
+        orElse: () => _category,
+      );
+      _category = matched;
+    }
+    if (product.options.value != null && product.options.value!.isNotEmpty) {
+      _options = product.options.value!
+          .expand((opt) => opt.values.isNotEmpty ? opt.values : [opt.name])
+          .toList();
     }
   }
 
@@ -110,13 +141,17 @@ class _SellerFundFormScreenState extends State<SellerFundFormScreen> {
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
             child: StepIndicator(
               totalSteps: _totalSteps,
-              currentStep: _currentStep,
+              currentStep: _currentStep + 1,
             ),
           ),
           Expanded(
             child: IndexedStack(
-              index: _currentStep - 1,
+              index: _currentStep,
               children: [
+                _Step0(
+                  onUrlScrape: _onUrlScrapeSelected,
+                  onManual: () => setState(() => _currentStep = 1),
+                ),
                 _Step1(
                   productNameCtrl: _productNameCtrl,
                   category: _category,
@@ -162,14 +197,183 @@ class _SellerFundFormScreenState extends State<SellerFundFormScreen> {
               ],
             ),
           ),
-          _BottomButtons(
-            currentStep: _currentStep,
-            totalSteps: _totalSteps,
-            onPrev: _goPrev,
-            onNext: _goNext,
-            onSubmit: _submit,
+          if (_currentStep > 0)
+            _BottomButtons(
+              currentStep: _currentStep,
+              totalSteps: _totalSteps,
+              onPrev: _goPrev,
+              onNext: _goNext,
+              onSubmit: _submit,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Step 0: 등록 방식 선택 ────────────────────────────────────────────────────
+
+class _Step0 extends StatelessWidget {
+  final VoidCallback onUrlScrape;
+  final VoidCallback onManual;
+
+  const _Step0({required this.onUrlScrape, required this.onManual});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _StepTitle('등록 방식 선택'),
+          const SizedBox(height: 8),
+          const Text(
+            '상품을 어떻게 등록하시겠어요?',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          GestureDetector(
+            onTap: onUrlScrape,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                border: Border.all(color: AppColors.primary, width: 2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.link,
+                          color: AppColors.primary,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  'URL로 빠른 등록',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                _RecommendedBadge(),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    '기존 쇼핑몰 URL을 붙여넣으면 자동으로 상품 정보를 가져옵니다',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: onManual,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                border: Border.all(color: AppColors.border),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.edit_outlined,
+                          color: AppColors.textSecondary,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        '직접 입력',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    '상품 정보를 처음부터 직접 입력합니다',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RecommendedBadge extends StatelessWidget {
+  const _RecommendedBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Text(
+        '추천',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
       ),
     );
   }
@@ -194,8 +398,8 @@ class _BottomButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // On step 5, the action buttons are inside the step itself
-    if (currentStep == totalSteps) return const SizedBox.shrink();
+    // On last step, the action buttons are inside the step itself
+    if (currentStep == totalSteps - 1) return const SizedBox.shrink();
 
     return Container(
       color: AppColors.surface,
