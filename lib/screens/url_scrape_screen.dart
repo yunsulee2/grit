@@ -138,7 +138,8 @@ class _UrlScrapeScreenState extends State<UrlScrapeScreen> {
           child: Divider(height: 1, color: AppColors.border),
         ),
       ),
-      body: Center(
+      body: Align(
+        alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
           child: _buildBody(isDesktop),

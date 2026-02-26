@@ -208,7 +208,7 @@ class _ReorderableImageGridState extends State<_ReorderableImageGrid> {
     final isHover = _hoverIndex == index && _draggingIndex != index;
 
     return LongPressDraggable<int>(
-      key: ValueKey(widget.images[index]),
+      key: ValueKey('img-$index-${widget.images[index]}'),
       data: index,
       delay: const Duration(milliseconds: 300),
       onDragStarted: () => setState(() => _draggingIndex = index),

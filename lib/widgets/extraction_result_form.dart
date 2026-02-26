@@ -117,13 +117,14 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
     final nutrition = p.nutritionInfo.value;
     final options = p.options.value;
 
-    // Combine mainImage + galleryImages for the grid editor
+    // Combine mainImage + galleryImages for the grid editor (deduplicated)
     final mainImg = p.mainImage.value;
     final gallery = p.galleryImages.value ?? [];
+    final seen = <String>{};
     final allImages = <String>[
       if (mainImg != null && mainImg.isNotEmpty) mainImg,
       ...gallery,
-    ];
+    ].where((img) => seen.add(img)).toList();
 
     final detailImgs = p.detailImages.value ?? [];
 
