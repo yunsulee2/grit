@@ -350,7 +350,7 @@ async def parse_naver(url: str) -> dict:
     Parse a Naver product page.
 
     Layer 1: curl_cffi with Chrome TLS impersonation (fast, bypasses basic protection)
-    Layer 2: nodriver (real Chrome, for heavily protected pages / CAPTCHA)
+    Layer 2: nodriver with CAPTCHA waiting (real Chrome, user solves CAPTCHA once)
     """
     # Determine referer
     if "brand.naver.com" in url:
@@ -376,15 +376,33 @@ async def parse_naver(url: str) -> dict:
     except Exception as e:
         print(f"[naver] curl_cffi failed: {e}")
 
-    # Layer 2: nodriver (real Chrome)
-    try:
-        from parsers.browser import fetch_with_nodriver
+    # Layer 2: nodriver with CAPTCHA waiting (real Chrome)
+    # Opens Chrome window. If CAPTCHA appears, waits for user to solve it.
+    # Once solved, the session remembers it — subsequent requests work automatically.
+    #
+    # Warmup strategy: naver.com → store main page → product page
+    # The store page establishes session cookies that may help avoid CAPTCHA.
+    import re as _re
+    store_match = _re.search(
+        r"(?:smartstore|brand)\.naver\.com/([^/]+)/products/", url
+    )
+    store_warmup = None
+    if store_match:
+        store_slug = store_match.group(1)
+        domain = "brand.naver.com" if "brand.naver.com" in url else "smartstore.naver.com"
+        store_warmup = f"https://{domain}/{store_slug}"
 
-        print(f"[naver] Fetching with nodriver: {url}")
-        html = await fetch_with_nodriver(
+    try:
+        from parsers.browser import fetch_with_nodriver_captcha
+
+        print(f"[naver] Fetching with nodriver (CAPTCHA-aware): {url}")
+        if store_warmup:
+            print(f"[naver] Store warmup: {store_warmup}")
+        html = await fetch_with_nodriver_captcha(
             url,
-            warmup_url="https://www.naver.com/",
+            warmup_url=store_warmup or "https://www.naver.com/",
             wait_seconds=6,
+            captcha_timeout=120,
         )
         print(f"[naver] nodriver got {len(html)} bytes")
 
@@ -400,5 +418,6 @@ async def parse_naver(url: str) -> dict:
 
     raise RuntimeError(
         "네이버 상품 페이지에 접근할 수 없습니다. "
-        "URL을 확인하거나 상품 정보를 직접 입력해 주세요."
+        "Chrome 브라우저가 열리면 보안 확인(CAPTCHA)을 완료해 주세요. "
+        "한 번 풀면 이후 자동으로 접속됩니다."
     )

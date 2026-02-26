@@ -24,7 +24,7 @@ class ScrapeErrorView extends StatelessWidget {
       case ScrapeErrorCode.invalidUrl:
         return '올바른 URL을 입력해주세요';
       case ScrapeErrorCode.crawlBlocked:
-        return '이 사이트에서 정보를 가져올 수 없습니다';
+        return '보안 확인이 필요합니다';
       case ScrapeErrorCode.parseError:
         return '상품 정보를 분석하지 못했습니다';
       case ScrapeErrorCode.timeout:
