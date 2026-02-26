@@ -145,31 +145,40 @@ async def fetch_with_nodriver(url: str, warmup_url: str | None = None, wait_seco
         raise RuntimeError(f"Browser fetch failed: {e}")
 
 
+class CaptchaRequiredError(RuntimeError):
+    """Raised when CAPTCHA is detected and user needs to solve it in Chrome."""
+    pass
+
+
 async def fetch_with_nodriver_captcha(
     url: str,
     warmup_url: str | None = None,
     wait_seconds: int = 6,
-    captcha_timeout: int = 120,
+    captcha_timeout: int = 60,
 ) -> str:
     """
-    Fetch a page using nodriver with automatic CAPTCHA detection and waiting.
+    Fetch a page using nodriver with CAPTCHA detection and two-phase flow.
 
-    If a CAPTCHA challenge is detected, this function waits for the user
-    to solve it in the visible Chrome window. Once solved, the page is
-    reloaded and content is extracted. The browser session remembers the
-    CAPTCHA solution, so subsequent requests won't need it again.
+    Phase 1 (first call): Opens Chrome, navigates to the page.
+      - If CAPTCHA detected → raises CaptchaRequiredError immediately
+        (user sees Chrome and can solve CAPTCHA while looking at the error)
+      - If no CAPTCHA → extracts and returns HTML
+
+    Phase 2 (retry after user solves CAPTCHA): Browser session is alive,
+      CAPTCHA already solved → navigates to page and extracts data.
 
     Args:
         url: The page URL to fetch
-        warmup_url: Optional URL to visit first (e.g., homepage for cookie warmup)
+        warmup_url: Optional URL to visit first (e.g., store page for cookie warmup)
         wait_seconds: Seconds to wait after page load for JS rendering
-        captcha_timeout: Max seconds to wait for user to solve CAPTCHA
+        captcha_timeout: Max seconds to wait for CAPTCHA auto-resolution
 
     Returns:
         Full page HTML string
 
     Raises:
-        RuntimeError: If page is blocked, CAPTCHA times out, or content is too small
+        CaptchaRequiredError: If CAPTCHA detected (user should solve and retry)
+        RuntimeError: If page is blocked or content is too small
     """
     global _browser
 
@@ -180,7 +189,7 @@ async def fetch_with_nodriver_captcha(
         raise RuntimeError(f"Failed to start browser: {e}")
 
     try:
-        # Warm up with homepage if specified (builds cookies)
+        # Warm up with another page first (builds cookies, may help avoid CAPTCHA)
         if warmup_url:
             page = await browser.get(warmup_url)
             await page.sleep(3)
@@ -196,42 +205,49 @@ async def fetch_with_nodriver_captcha(
         if _is_blocked_page(html):
             raise RuntimeError("Access Denied by bot protection")
 
-        # Check for CAPTCHA — wait for user to solve it
+        # Check for CAPTCHA
         if _is_captcha_page(html):
-            print(
-                f"[browser] CAPTCHA detected on {url}. "
-                f"Waiting up to {captcha_timeout}s for user to solve it in Chrome..."
-            )
+            print(f"[browser] CAPTCHA detected on {url}.")
+
+            # Wait a short time — CAPTCHA might auto-resolve or user might
+            # already be solving it from a previous attempt
             elapsed = 0
             poll_interval = 3
             while elapsed < captcha_timeout:
                 await page.sleep(poll_interval)
                 elapsed += poll_interval
 
-                # Check current page state
                 try:
                     html = _get_html_value(
                         await page.evaluate("document.documentElement.outerHTML")
                     )
                 except Exception:
-                    # Page might be navigating
                     continue
 
                 if not _is_captcha_page(html):
                     print(f"[browser] CAPTCHA solved after {elapsed}s!")
-                    # Give the page time to fully load after CAPTCHA
                     await page.sleep(3)
+                    # Reload target page for clean content
+                    page = await browser.get(url)
+                    await page.sleep(wait_seconds)
+                    html = _get_html_value(
+                        await page.evaluate("document.documentElement.outerHTML")
+                    )
                     break
             else:
-                raise RuntimeError(
-                    "CAPTCHA 시간이 초과되었습니다. "
-                    "Chrome 브라우저에서 보안 확인을 완료해 주세요. "
-                    "완료 후 다시 시도하면 자동으로 접속됩니다."
+                # CAPTCHA not solved within timeout — tell user to solve and retry
+                raise CaptchaRequiredError(
+                    "네이버 보안 확인(CAPTCHA)이 필요합니다.\n"
+                    "Chrome 브라우저에서 보안 확인을 완료한 후 '다시 시도'를 눌러주세요.\n"
+                    "한 번 풀면 이후 자동으로 접속됩니다."
                 )
 
-            # After CAPTCHA solved, reload the target page to get clean content
-            page = await browser.get(url)
-            await page.sleep(wait_seconds)
+        # Still CAPTCHA after solving?
+        if _is_captcha_page(html):
+            raise CaptchaRequiredError(
+                "CAPTCHA가 아직 해결되지 않았습니다.\n"
+                "Chrome 브라우저에서 보안 확인을 완료한 후 다시 시도해 주세요."
+            )
 
         # Scroll to trigger lazy loading
         try:
@@ -245,17 +261,10 @@ async def fetch_with_nodriver_captcha(
         # Get final HTML
         html = _get_html_value(await page.evaluate("document.documentElement.outerHTML"))
 
-        # Final CAPTCHA check (in case CAPTCHA reappeared)
-        if _is_captcha_page(html):
-            raise RuntimeError(
-                "CAPTCHA가 다시 나타났습니다. "
-                "Chrome 브라우저에서 보안 확인을 완료한 후 다시 시도해 주세요."
-            )
-
         if len(html) < 1000:
             raise RuntimeError(f"Page content too small ({len(html)} bytes)")
 
-        # Mark domain as CAPTCHA-cleared
+        # Mark domain as CAPTCHA-cleared for this session
         from urllib.parse import urlparse
         domain = urlparse(url).hostname or ""
         _captcha_cleared.add(domain)
@@ -263,7 +272,7 @@ async def fetch_with_nodriver_captcha(
 
         return html
 
-    except RuntimeError:
+    except (RuntimeError, CaptchaRequiredError):
         raise
     except Exception as e:
         _browser = None

@@ -65,11 +65,11 @@ class ScrapeService {
       progress: ScrapeProgress(
         step: 1,
         totalSteps: totalSteps,
-        message: site == 'naver'
+        message: site == SupportedSite.naver
             ? '네이버에 접속 중... 보안 확인이 필요하면 Chrome에서 풀어주세요'
             : '페이지에 접속하고 있습니다...',
       ),
-      estimatedSeconds: site == 'naver' ? 30 : 8,
+      estimatedSeconds: site == SupportedSite.naver ? 30 : 8,
       createdAt: createdAt,
     );
 
@@ -105,6 +105,8 @@ class ScrapeService {
         switch (errorCode) {
           case 'BLOCKED':
             mappedCode = ScrapeErrorCode.crawlBlocked;
+          case 'CAPTCHA_REQUIRED':
+            mappedCode = ScrapeErrorCode.captchaRequired;
           case 'NO_DATA':
             mappedCode = ScrapeErrorCode.notProductPage;
           case 'MISSING_URL':

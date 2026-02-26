@@ -107,10 +107,16 @@ async def scrape(request: ScrapeRequest):
         return {"success": True, "data": data}
 
     except RuntimeError as e:
+        # Check if it's a CAPTCHA error (from browser.CaptchaRequiredError)
+        error_str = str(e)
+        if "CAPTCHA" in error_str or "보안 확인" in error_str:
+            error_code = "CAPTCHA_REQUIRED"
+        else:
+            error_code = "BLOCKED"
         return {
             "success": False,
-            "error": str(e),
-            "errorCode": "BLOCKED",
+            "error": error_str,
+            "errorCode": error_code,
         }
     except Exception as e:
         print(f"[scrape] Unexpected error for {url}: {e}")

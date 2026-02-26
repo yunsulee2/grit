@@ -24,6 +24,8 @@ class ScrapeErrorView extends StatelessWidget {
       case ScrapeErrorCode.invalidUrl:
         return '올바른 URL을 입력해주세요';
       case ScrapeErrorCode.crawlBlocked:
+        return '이 사이트에서 정보를 가져올 수 없습니다';
+      case ScrapeErrorCode.captchaRequired:
         return '보안 확인이 필요합니다';
       case ScrapeErrorCode.parseError:
         return '상품 정보를 분석하지 못했습니다';
@@ -36,6 +38,8 @@ class ScrapeErrorView extends StatelessWidget {
     }
   }
 
+  bool get _isCaptcha => errorCode == ScrapeErrorCode.captchaRequired;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -43,16 +47,16 @@ class ScrapeErrorView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Error icon — red circle with X
+          // Error icon
           Container(
             width: 64,
             height: 64,
-            decoration: const BoxDecoration(
-              color: AppColors.error,
+            decoration: BoxDecoration(
+              color: _isCaptcha ? AppColors.warning : AppColors.error,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.close,
+            child: Icon(
+              _isCaptcha ? Icons.security : Icons.close,
               color: AppColors.surface,
               size: 32,
             ),
@@ -101,7 +105,7 @@ class ScrapeErrorView extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      '다시 시도',
+                      _isCaptcha ? 'CAPTCHA 풀었어요' : '다시 시도',
                       style: AppTextStyles.labelLarge.copyWith(
                         color: AppColors.primary,
                       ),
