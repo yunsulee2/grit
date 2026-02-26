@@ -1,0 +1,131 @@
+{
+  "timestamp": "2026-02-26T11:51:26.608Z",
+  "reason": "compaction",
+  "status": {
+    "version": "2.0",
+    "lastUpdated": "2026-02-26T11:44:45.322Z",
+    "activeFeatures": [
+      "backend",
+      "parsers"
+    ],
+    "primaryFeature": "backend",
+    "features": {
+      "backend": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-26T11:22:35.566Z",
+          "lastUpdated": "2026-02-26T11:44:45.322Z"
+        },
+        "lastFile": "/Users/yunsu/Desktop/proj/grit/backend/main.py"
+      },
+      "parsers": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-26T11:22:35.698Z",
+          "lastUpdated": "2026-02-26T11:44:14.839Z"
+        },
+        "lastFile": "/Users/yunsu/Desktop/proj/grit/backend/parsers/coupang.py"
+      }
+    },
+    "pipeline": {
+      "currentPhase": 1,
+      "level": "Dynamic",
+      "phaseHistory": []
+    },
+    "session": {
+      "startedAt": "2026-02-26T03:07:08.707Z",
+      "onboardingCompleted": false,
+      "lastActivity": "2026-02-26T11:44:45.322Z"
+    },
+    "history": [
+      {
+        "timestamp": "2026-02-26T11:22:35.566Z",
+        "feature": "backend",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T11:22:35.698Z",
+        "feature": "parsers",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T11:22:55.116Z",
+        "feature": "parsers",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T11:23:05.229Z",
+        "feature": "parsers",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T11:23:05.367Z",
+        "feature": "parsers",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T11:23:22.155Z",
+        "feature": "backend",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T11:23:28.939Z",
+        "feature": "parsers",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T11:29:28.386Z",
+        "feature": "backend",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T11:31:07.326Z",
+        "feature": "parsers",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T11:32:17.331Z",
+        "feature": "parsers",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T11:43:30.094Z",
+        "feature": "parsers",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T11:44:14.839Z",
+        "feature": "parsers",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T11:44:45.322Z",
+        "feature": "backend",
+        "phase": "do",
+        "action": "updated"
+      }
+    ]
+  }
+}

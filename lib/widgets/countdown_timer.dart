@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
 
 class CountdownTimer extends StatefulWidget {
   const CountdownTimer({
@@ -62,17 +65,16 @@ class _CountdownTimerState extends State<CountdownTimer> {
 
     if (widget.isBadge) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm, vertical: 2),
         decoration: BoxDecoration(
-          color: isEnded ? AppColors.textSecondary : AppColors.accentRed,
-          borderRadius: BorderRadius.circular(4),
+          color: isEnded ? AppColors.textSecondary : AppColors.error,
+          borderRadius: AppRadius.borderXs,
         ),
         child: Text(
           text,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
+          style: AppTextStyles.countdownSmall.copyWith(
+            color: AppColors.textInverse,
           ),
         ),
       );
@@ -81,9 +83,8 @@ class _CountdownTimerState extends State<CountdownTimer> {
     // inline mode
     return Text(
       text,
-      style: TextStyle(
-        color: isEnded ? AppColors.textSecondary : AppColors.accentRed,
-        fontSize: 14,
+      style: AppTextStyles.bodyLarge.copyWith(
+        color: isEnded ? AppColors.textSecondary : AppColors.error,
         fontWeight: FontWeight.w600,
       ),
     );

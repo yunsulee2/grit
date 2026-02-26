@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/fund.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
 import 'volume_pricing_bar.dart';
 import 'price_tier_label.dart';
 
@@ -25,28 +28,24 @@ class PriceTierPreview extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             '미리보기',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+            style: AppTextStyles.titleSmall,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           VolumePricingBar(
             tiers: safeTiers,
             currentParticipants: 0,
             maxParticipants: safeMax,
             isLarge: true,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           PriceTierLabel(
             tiers: safeTiers,
             currentParticipants: 0,

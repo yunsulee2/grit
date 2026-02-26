@@ -3,6 +3,7 @@ import 'screens/home_screen.dart';
 import 'screens/category_screen.dart';
 import 'screens/seller_dashboard_screen.dart';
 import 'screens/my_page_screen.dart';
+import 'theme/app_colors.dart';
 import 'widgets/bottom_tab_bar.dart';
 
 class AppShell extends StatefulWidget {
@@ -29,7 +30,7 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       body: IndexedStack(
         index: _selectedIndex,
         children: const [

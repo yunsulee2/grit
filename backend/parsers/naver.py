@@ -1,225 +1,404 @@
 """
-Naver SmartStore product page parser.
+Naver SmartStore / Brand Store product page parser.
+
+Strategy:
+1. curl_cffi with Chrome TLS impersonation → parse __NEXT_DATA__ or OG tags
+2. nodriver (real Chrome) fallback for heavily protected pages
+
+Handles:
+- smartstore.naver.com/{store}/products/{id}
+- brand.naver.com/{brand}/products/{id}
+- shopping.naver.com product pages
 """
 
 import json
 import re
-import httpx
 from bs4 import BeautifulSoup
 
 
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
-    ),
-    "Referer": "https://smartstore.naver.com/",
-}
-
-
 def _ensure_https(url: str) -> str:
-    """Convert protocol-relative URLs to https."""
     if not url:
-        return url
+        return ""
     if url.startswith("//"):
         return "https:" + url
     return url
 
 
+def _parse_price(val) -> int | None:
+    if val is None:
+        return None
+    if isinstance(val, (int, float)):
+        return int(val)
+    cleaned = re.sub(r"[^\d]", "", str(val))
+    return int(cleaned) if cleaned else None
+
+
+def _deep_get(data: dict, *keys, default=None):
+    """Safely traverse nested dict keys."""
+    current = data
+    for key in keys:
+        if isinstance(current, dict):
+            current = current.get(key)
+        else:
+            return default
+        if current is None:
+            return default
+    return current
+
+
+def _extract_next_data(html: str) -> dict:
+    """Extract __NEXT_DATA__ JSON from Next.js SSR page."""
+    pattern = re.compile(
+        r'<script\s+id="__NEXT_DATA__"[^>]*>(.*?)</script>',
+        re.DOTALL,
+    )
+    match = pattern.search(html)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError:
+            pass
+    return {}
+
+
+def _extract_preloaded_state(html: str) -> dict:
+    """Extract window.__PRELOADED_STATE__ from script tags."""
+    pattern = re.compile(
+        r"window\.__PRELOADED_STATE__\s*=\s*(\{.*?\})(?:\s*;|\s*</script>)",
+        re.DOTALL,
+    )
+    match = pattern.search(html)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError:
+            pass
+    return {}
+
+
 def _extract_json_ld(soup: BeautifulSoup) -> dict:
-    """Extract the first JSON-LD script block as a dict, or empty dict on failure."""
+    """Extract JSON-LD product data."""
     for tag in soup.find_all("script", type="application/ld+json"):
         try:
             data = json.loads(tag.string or "")
-            # Some pages wrap it in a list
             if isinstance(data, list):
-                data = data[0]
-            return data
+                for item in data:
+                    if isinstance(item, dict) and item.get("@type") == "Product":
+                        return item
+                data = data[0] if data else {}
+            if isinstance(data, dict):
+                return data
         except (json.JSONDecodeError, IndexError):
             continue
     return {}
 
 
-def _extract_preloaded_state(soup: BeautifulSoup) -> dict:
-    """Extract window.__PRELOADED_STATE__ JSON from script tags."""
-    pattern = re.compile(r"window\.__PRELOADED_STATE__\s*=\s*(\{.*?\});", re.DOTALL)
-    for tag in soup.find_all("script"):
-        text = tag.string or ""
-        match = pattern.search(text)
-        if match:
-            try:
-                return json.loads(match.group(1))
-            except json.JSONDecodeError:
-                pass
-    return {}
+def _extract_meta(soup: BeautifulSoup, prop: str) -> str | None:
+    tag = soup.find("meta", property=prop) or soup.find("meta", attrs={"name": prop})
+    return (tag.get("content") or None) if tag else None
 
 
-def _extract_meta(soup: BeautifulSoup, property_name: str) -> str | None:
-    """Extract content from an og: or name= meta tag."""
-    tag = soup.find("meta", property=property_name) or soup.find(
-        "meta", attrs={"name": property_name}
-    )
-    if tag:
-        return tag.get("content") or None
-    return None
-
-
-async def parse_naver(url: str) -> dict:
-    """
-    Fetch and parse a Naver SmartStore product page.
-
-    Returns a dict with:
-        productName, brandName, originalPrice, description,
-        mainImage, galleryImages, detailImages, category
-    """
+def _parse_html(html: str, url: str) -> dict:
+    """Parse Naver product page HTML into structured data."""
     result = {
         "productName": None,
         "brandName": None,
         "originalPrice": None,
         "description": None,
+        "category": None,
+        "origin": None,
+        "weight": None,
         "mainImage": None,
         "galleryImages": [],
         "detailImages": [],
-        "category": None,
+        "options": [],
+        "sourceUrl": url,
+        "detectedSite": "네이버",
     }
-
-    async with httpx.AsyncClient(follow_redirects=True, timeout=20.0) as client:
-        try:
-            response = await client.get(url, headers=HEADERS)
-            response.raise_for_status()
-            html = response.text
-        except httpx.HTTPError as exc:
-            print(f"[naver] HTTP error fetching {url}: {exc}")
-            return result
 
     soup = BeautifulSoup(html, "lxml")
     json_ld = _extract_json_ld(soup)
+    next_data = _extract_next_data(html)
+    preloaded = _extract_preloaded_state(html)
 
-    # ── productName ──────────────────────────────────────────────────────────
-    try:
-        result["productName"] = (
-            json_ld.get("name")
-            or _extract_meta(soup, "og:title")
-            or (soup.find("title").get_text(strip=True) if soup.find("title") else None)
+    # Try to find product data from embedded JSON (most complete source)
+    product = (
+        _deep_get(next_data, "props", "pageProps", "product")
+        or _deep_get(next_data, "props", "pageProps", "productDetail")
+        or _deep_get(next_data, "props", "pageProps", "data", "product")
+        or _deep_get(next_data, "props", "initialState", "product")
+        or {}
+    )
+
+    # __PRELOADED_STATE__ paths (older SmartStore pages)
+    if not product:
+        product = (
+            _deep_get(preloaded, "product", "A", "productInfo")
+            or _deep_get(preloaded, "product", "productInfo")
+            or {}
         )
-    except Exception as exc:
-        print(f"[naver] productName extraction failed: {exc}")
 
-    # ── brandName ─────────────────────────────────────────────────────────────
-    try:
-        brand = json_ld.get("brand")
-        if isinstance(brand, dict):
-            result["brandName"] = brand.get("name")
-        elif isinstance(brand, str):
-            result["brandName"] = brand
-        if not result["brandName"]:
-            # Fallback: seller info often sits in a specific element
-            seller_tag = soup.find("span", class_=re.compile(r"_?sellerName|storeName", re.I))
-            if seller_tag:
-                result["brandName"] = seller_tag.get_text(strip=True)
-    except Exception as exc:
-        print(f"[naver] brandName extraction failed: {exc}")
+    # ── productName ──────────────────────────────────────────────
+    result["productName"] = (
+        product.get("name")
+        or product.get("productName")
+        or json_ld.get("name")
+        or _extract_meta(soup, "og:title")
+        or (soup.find("title").get_text(strip=True) if soup.find("title") else None)
+    )
 
-    # ── originalPrice ─────────────────────────────────────────────────────────
-    try:
-        offers = json_ld.get("offers") or {}
+    # ── brandName ────────────────────────────────────────────────
+    brand = (
+        product.get("brandName")
+        or product.get("storeName")
+        or product.get("channelName")
+    )
+    if not brand:
+        brand_ld = json_ld.get("brand")
+        if isinstance(brand_ld, dict):
+            brand = brand_ld.get("name")
+        elif isinstance(brand_ld, str):
+            brand = brand_ld
+    if not brand:
+        for sel in [
+            "a._2bCBl", "span._2bCBl",
+            "a[class*='seller']", "span[class*='store']",
+            "span[class*='sellerName']", "a[class*='storeName']",
+        ]:
+            tag = soup.select_one(sel)
+            if tag:
+                brand = tag.get_text(strip=True)
+                break
+    result["brandName"] = brand
+
+    # ── originalPrice ────────────────────────────────────────────
+    price = (
+        _parse_price(product.get("salePrice"))
+        or _parse_price(product.get("price"))
+        or _parse_price(product.get("discountedSalePrice"))
+        or _parse_price(product.get("promotionPrice"))
+    )
+    if not price:
+        offers = json_ld.get("offers", {})
         if isinstance(offers, list):
-            offers = offers[0]
-        price = offers.get("price") if isinstance(offers, dict) else None
-        if price is None:
-            price = _extract_meta(soup, "og:price:amount") or _extract_meta(soup, "product:price:amount")
-        if price is None:
-            # Try __PRELOADED_STATE__
-            state = _extract_preloaded_state(soup)
-            price = (
-                state.get("product", {})
-                .get("A", {})
-                .get("productInfo", {})
-                .get("salePrice")
-            )
-        result["originalPrice"] = price
-    except Exception as exc:
-        print(f"[naver] originalPrice extraction failed: {exc}")
-
-    # ── description ───────────────────────────────────────────────────────────
-    try:
-        result["description"] = (
-            json_ld.get("description")
-            or _extract_meta(soup, "og:description")
-            or _extract_meta(soup, "description")
+            offers = offers[0] if offers else {}
+        if isinstance(offers, dict):
+            price = _parse_price(offers.get("price") or offers.get("lowPrice"))
+    if not price:
+        price = _parse_price(
+            _extract_meta(soup, "product:price:amount")
+            or _extract_meta(soup, "og:price:amount")
         )
-    except Exception as exc:
-        print(f"[naver] description extraction failed: {exc}")
+    result["originalPrice"] = price
 
-    # ── mainImage ─────────────────────────────────────────────────────────────
-    try:
-        image = json_ld.get("image")
-        if isinstance(image, list) and image:
-            image = image[0]
-        if not image:
-            image = _extract_meta(soup, "og:image")
-        result["mainImage"] = _ensure_https(image) if image else None
-    except Exception as exc:
-        print(f"[naver] mainImage extraction failed: {exc}")
+    # ── description ──────────────────────────────────────────────
+    result["description"] = (
+        product.get("description")
+        or product.get("simpleDescription")
+        or json_ld.get("description")
+        or _extract_meta(soup, "og:description")
+        or _extract_meta(soup, "description")
+    )
 
-    # ── galleryImages ─────────────────────────────────────────────────────────
-    try:
-        image_field = json_ld.get("image")
-        if isinstance(image_field, list):
-            result["galleryImages"] = [_ensure_https(u) for u in image_field if u]
-        else:
-            # Fall back to thumbnail elements common in SmartStore layouts
-            thumbs = soup.select(
-                "ul._2QSxj li img, "
-                "div.thumbnail_wrap img, "
-                "div._1Bp8S img"
-            )
-            result["galleryImages"] = [
-                _ensure_https(img["src"])
-                for img in thumbs
-                if img.get("src")
-            ]
-    except Exception as exc:
-        print(f"[naver] galleryImages extraction failed: {exc}")
+    # ── images ───────────────────────────────────────────────────
+    images = product.get("images") or product.get("productImages") or []
+    if isinstance(images, list) and images:
+        for img in images:
+            src = ""
+            if isinstance(img, dict):
+                src = _ensure_https(img.get("url") or img.get("src") or "")
+            elif isinstance(img, str):
+                src = _ensure_https(img)
+            if src:
+                result["galleryImages"].append(src)
+        if result["galleryImages"]:
+            result["mainImage"] = result["galleryImages"][0]
 
-    # ── detailImages ──────────────────────────────────────────────────────────
-    try:
-        detail_selectors = [
+    # representImage (some SmartStore pages use this)
+    if not result["mainImage"] and product.get("representImage"):
+        rep = product["representImage"]
+        if isinstance(rep, dict):
+            result["mainImage"] = _ensure_https(rep.get("url") or rep.get("src") or "")
+        elif isinstance(rep, str):
+            result["mainImage"] = _ensure_https(rep)
+
+    if not result["mainImage"]:
+        img_ld = json_ld.get("image")
+        if isinstance(img_ld, list) and img_ld:
+            result["mainImage"] = _ensure_https(str(img_ld[0]))
+            result["galleryImages"] = [_ensure_https(u) for u in img_ld if u]
+        elif isinstance(img_ld, str):
+            result["mainImage"] = _ensure_https(img_ld)
+
+    if not result["mainImage"]:
+        og_img = _extract_meta(soup, "og:image")
+        if og_img:
+            result["mainImage"] = _ensure_https(og_img)
+
+    if not result["galleryImages"]:
+        thumbs = soup.select(
+            "ul._2QSxj li img, div.thumbnail_wrap img, "
+            "div._1Bp8S img, img[class*='thumb']"
+        )
+        result["galleryImages"] = [
+            _ensure_https(t.get("src") or t.get("data-src") or "")
+            for t in thumbs
+        ]
+        result["galleryImages"] = [g for g in result["galleryImages"] if g]
+
+    # ── detailImages ─────────────────────────────────────────────
+    detail_imgs: list[str] = []
+
+    # From product JSON
+    for key in ["detailImages", "contentImages", "detailImageUrls"]:
+        raw = product.get(key) or []
+        if isinstance(raw, list):
+            for img in raw:
+                if isinstance(img, dict):
+                    src = _ensure_https(img.get("url") or img.get("src") or "")
+                elif isinstance(img, str):
+                    src = _ensure_https(img)
+                else:
+                    continue
+                if src and src not in detail_imgs:
+                    detail_imgs.append(src)
+
+    # From embedded detail HTML content (detailContent is HTML string)
+    for key in ["detailContent", "detailContents", "contentHtml"]:
+        content_html = product.get(key) or ""
+        if isinstance(content_html, str) and "<img" in content_html:
+            detail_soup = BeautifulSoup(content_html, "lxml")
+            for img in detail_soup.find_all("img"):
+                src = _ensure_https(img.get("src") or img.get("data-src") or "")
+                if src and src not in detail_imgs and not src.endswith((".svg", ".gif", ".ico")):
+                    detail_imgs.append(src)
+
+    # From main page HTML (rendered detail section)
+    if not detail_imgs:
+        for selector in [
             "div.se-main-container img",
             "div._3FiSx img",
-            "div.product-detail img",
+            "#INTRODUCE img",
             "div[class*='detail'] img",
-        ]
-        detail_imgs = []
-        for selector in detail_selectors:
+            "div[class*='content'] img",
+            "div.product-detail img",
+        ]:
             tags = soup.select(selector)
             if tags:
-                detail_imgs = tags
+                for img in tags:
+                    src = _ensure_https(
+                        img.get("src") or img.get("data-src") or img.get("data-lazy-src") or ""
+                    )
+                    if src and src not in detail_imgs and not src.endswith((".svg", ".gif", ".ico")):
+                        detail_imgs.append(src)
                 break
-        result["detailImages"] = [
-            _ensure_https(img.get("src") or img.get("data-src") or "")
-            for img in detail_imgs
-            if img.get("src") or img.get("data-src")
-        ]
-    except Exception as exc:
-        print(f"[naver] detailImages extraction failed: {exc}")
+    result["detailImages"] = detail_imgs
 
-    # ── category ──────────────────────────────────────────────────────────────
-    try:
-        result["category"] = json_ld.get("category") or None
-        if not result["category"]:
-            # Try breadcrumb
-            breadcrumb = soup.select(
-                "ol.breadcrumb li, "
-                "div._3rLEW li, "
-                "nav[aria-label*='breadcrumb'] li"
+    # ── category ─────────────────────────────────────────────────
+    cat = product.get("category") or product.get("categoryName")
+    if isinstance(cat, dict):
+        whole = cat.get("wholeCategoryName")
+        if whole:
+            result["category"] = whole
+        else:
+            parts = []
+            for k in ["category1Name", "category2Name", "category3Name", "category4Name"]:
+                v = cat.get(k)
+                if v:
+                    parts.append(v)
+            if parts:
+                result["category"] = " > ".join(parts)
+    elif isinstance(cat, str) and cat:
+        result["category"] = cat
+
+    if not result["category"]:
+        result["category"] = json_ld.get("category")
+    if not result["category"]:
+        crumbs = soup.select("ol.breadcrumb li, nav[aria-label*='breadcrumb'] li")
+        if crumbs:
+            result["category"] = " > ".join(
+                li.get_text(strip=True) for li in crumbs if li.get_text(strip=True)
             )
-            if breadcrumb:
-                result["category"] = " > ".join(
-                    li.get_text(strip=True) for li in breadcrumb if li.get_text(strip=True)
-                )
-    except Exception as exc:
-        print(f"[naver] category extraction failed: {exc}")
+
+    # ── options ──────────────────────────────────────────────────
+    raw_opts = (
+        product.get("options")
+        or product.get("optionCombinations")
+        or product.get("optionGroups")
+        or []
+    )
+    if isinstance(raw_opts, list):
+        for opt in raw_opts[:20]:
+            if isinstance(opt, dict):
+                name = opt.get("name") or opt.get("optionName") or opt.get("groupName") or ""
+                values = opt.get("values") or opt.get("optionValues") or opt.get("options") or []
+                if isinstance(values, list):
+                    str_vals = []
+                    for v in values:
+                        if isinstance(v, dict):
+                            str_vals.append(v.get("name") or v.get("value") or str(v))
+                        else:
+                            str_vals.append(str(v))
+                    if name or str_vals:
+                        result["options"].append({"name": name, "values": str_vals})
 
     return result
+
+
+async def parse_naver(url: str) -> dict:
+    """
+    Parse a Naver product page.
+
+    Layer 1: curl_cffi with Chrome TLS impersonation (fast, bypasses basic protection)
+    Layer 2: nodriver (real Chrome, for heavily protected pages / CAPTCHA)
+    """
+    # Determine referer
+    if "brand.naver.com" in url:
+        referer = "https://brand.naver.com/"
+    elif "shopping.naver.com" in url:
+        referer = "https://shopping.naver.com/"
+    else:
+        referer = "https://smartstore.naver.com/"
+
+    # Layer 1: curl_cffi
+    try:
+        from parsers.http_client import fetch_with_curl
+
+        print(f"[naver] Fetching with curl_cffi: {url}")
+        html = await fetch_with_curl(url, referer=referer, warmup_url=referer)
+        print(f"[naver] curl_cffi got {len(html)} bytes")
+
+        result = _parse_html(html, url)
+        if result.get("productName") or result.get("mainImage"):
+            print(f"[naver] curl_cffi success: {result.get('productName', '(no name)')}")
+            return result
+        print("[naver] curl_cffi got HTML but no meaningful data, escalating...")
+    except Exception as e:
+        print(f"[naver] curl_cffi failed: {e}")
+
+    # Layer 2: nodriver (real Chrome)
+    try:
+        from parsers.browser import fetch_with_nodriver
+
+        print(f"[naver] Fetching with nodriver: {url}")
+        html = await fetch_with_nodriver(
+            url,
+            warmup_url="https://www.naver.com/",
+            wait_seconds=6,
+        )
+        print(f"[naver] nodriver got {len(html)} bytes")
+
+        result = _parse_html(html, url)
+        if result.get("productName") or result.get("mainImage"):
+            print("[naver] nodriver extraction successful")
+            return result
+        return result  # Return partial data
+    except ImportError:
+        print("[naver] nodriver not available")
+    except Exception as e:
+        print(f"[naver] nodriver failed: {e}")
+
+    raise RuntimeError(
+        "네이버 상품 페이지에 접근할 수 없습니다. "
+        "URL을 확인하거나 상품 정보를 직접 입력해 주세요."
+    )

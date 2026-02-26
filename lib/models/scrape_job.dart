@@ -1,4 +1,4 @@
-import 'package:grit/models/extracted_product.dart';
+import 'extracted_product.dart';
 
 enum ScrapeStatus {
   pending,

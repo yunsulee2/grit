@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:grit/theme/app_colors.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
 
 class ShareButtons extends StatelessWidget {
   final String shareUrl;
@@ -33,7 +35,7 @@ class ShareButtons extends StatelessWidget {
           icon: Icons.chat_bubble,
           label: '카카오톡 공유',
           background: _KakaoBackground(),
-          iconColor: const Color(0xFF3A1D1D),
+          iconColor: const Color(0xFF3A1D1D), // Kakao brand dark brown — keep
           onTap: () => ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('카카오톡 공유는 앱에서 사용 가능합니다'),
@@ -41,7 +43,7 @@ class ShareButtons extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 24),
+        const SizedBox(width: AppSpacing.xxl),
         _ShareButton(
           icon: Icons.camera_alt,
           label: '인스타 스토리',
@@ -54,11 +56,11 @@ class ShareButtons extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 24),
+        const SizedBox(width: AppSpacing.xxl),
         _ShareButton(
           icon: Icons.link,
           label: '링크 복사',
-          background: _SolidBackground(color: const Color(0xFFF0F0F0)),
+          background: _SolidBackground(color: AppColors.borderSubtle),
           iconColor: AppColors.textSecondary,
           onTap: () => _copyLink(context),
         ),
@@ -106,9 +108,8 @@ class _ShareButton extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             label,
-            style: const TextStyle(
+            style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.textSecondary,
-              fontSize: 12,
             ),
           ),
         ],
@@ -125,7 +126,7 @@ class _KakaoBackground extends StatelessWidget {
     return Container(
       width: 48,
       height: 48,
-      color: const Color(0xFFFEE500),
+      color: const Color(0xFFFEE500), // Kakao brand yellow — keep
     );
   }
 }
@@ -141,7 +142,7 @@ class _InstaBackground extends StatelessWidget {
           begin: Alignment.bottomLeft,
           end: Alignment.topRight,
           colors: [
-            Color(0xFFF9CE34),
+            Color(0xFFF9CE34), // Instagram gradient — keep
             Color(0xFFEE2A7B),
             Color(0xFF6228D7),
           ],

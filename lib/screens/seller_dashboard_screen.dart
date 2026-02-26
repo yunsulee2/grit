@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import '../data/mock_data.dart';
 import '../models/fund.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
 import '../utils/formatters.dart';
+import '../widgets/responsive_container.dart';
 
 class SellerDashboardScreen extends StatelessWidget {
   const SellerDashboardScreen({super.key});
@@ -16,32 +20,30 @@ class SellerDashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('셀러 대시보드'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _SummaryCards(),
-          const SizedBox(height: 24),
-          const Text(
-            '내 펀드 목록',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+      body: ResponsiveContainer.content(
+        child: ListView(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          children: [
+            _SummaryCards(),
+            const SizedBox(height: AppSpacing.xxl),
+            Text(
+              '내 펀드 목록',
+              style: AppTextStyles.titleMedium,
             ),
-          ),
-          const SizedBox(height: 12),
-          ...funds.map((fund) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _FundCard(fund: fund),
-              )),
-        ],
+            const SizedBox(height: AppSpacing.md),
+            ...funds.map((fund) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: _FundCard(fund: fund),
+                )),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         onPressed: () {
           Navigator.pushNamed(context, '/seller/fund/new');
         },
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add, color: AppColors.onPrimary),
       ),
     );
   }
@@ -59,13 +61,13 @@ class _SummaryCards extends StatelessWidget {
             value: '3개',
             valueColor: AppColors.primary,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           _SummaryCard(
             label: '총 참여자',
             value: '1,247명',
             valueColor: AppColors.textPrimary,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           _SummaryCard(
             label: '이번 달 매출',
             value: '12,450,000원',
@@ -92,10 +94,10 @@ class _SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 160,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -103,19 +105,12 @@ class _SummaryCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
+            style: AppTextStyles.bodyMedium,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: valueColor,
-            ),
+            style: AppTextStyles.titleMedium.copyWith(color: valueColor),
           ),
         ],
       ),
@@ -131,7 +126,7 @@ class _FundCard extends StatelessWidget {
   Color get _statusColor {
     switch (fund.status) {
       case 'active':
-        return AppColors.successGreen;
+        return AppColors.success;
       case 'ended':
         return AppColors.textSecondary;
       default:
@@ -156,10 +151,10 @@ class _FundCard extends StatelessWidget {
     final revenue = fund.currentParticipants * fund.targetPrice;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -170,28 +165,22 @@ class _FundCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   fund.productName,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
+                  style: AppTextStyles.titleSmall,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm, vertical: 3),
                 decoration: BoxDecoration(
                   color: _statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: AppRadius.borderFull,
                 ),
                 child: Text(
                   _statusLabel,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                  style: AppTextStyles.labelSmall.copyWith(
                     color: _statusColor,
                   ),
                 ),
@@ -208,24 +197,20 @@ class _FundCard extends StatelessWidget {
                 children: [
                   Text(
                     '${formatNumber(fund.currentParticipants)}명 참여',
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
                     '목표 ${formatNumber(fund.maxParticipants)}명',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: AppTextStyles.bodySmall,
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               ClipRRect(
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: AppRadius.borderXs,
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 6,
@@ -241,15 +226,11 @@ class _FundCard extends StatelessWidget {
             children: [
               Text(
                 '마감: ${fund.endAt.month}/${fund.endAt.day}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
+                style: AppTextStyles.bodySmall,
               ),
               Text(
                 '매출 ${formatPrice(revenue)}',
-                style: const TextStyle(
-                  fontSize: 13,
+                style: AppTextStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
                 ),

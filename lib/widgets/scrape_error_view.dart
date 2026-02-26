@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
 import '../models/scrape_job.dart';
 
 class ScrapeErrorView extends StatelessWidget {
@@ -36,7 +39,7 @@ class ScrapeErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.xxxl),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -45,7 +48,7 @@ class ScrapeErrorView extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: const BoxDecoration(
-              color: AppColors.accentRed,
+              color: AppColors.error,
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -55,14 +58,12 @@ class ScrapeErrorView extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
 
           // Primary error message
           Text(
             _errorText,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+            style: AppTextStyles.titleMedium.copyWith(
               color: AppColors.textPrimary,
             ),
             textAlign: TextAlign.center,
@@ -70,11 +71,10 @@ class ScrapeErrorView extends StatelessWidget {
 
           // Optional detail message
           if (errorMessage != null && errorMessage!.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               errorMessage!,
-              style: const TextStyle(
-                fontSize: 13,
+              style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
                 height: 1.5,
               ),
@@ -82,7 +82,7 @@ class ScrapeErrorView extends StatelessWidget {
             ),
           ],
 
-          const SizedBox(height: 32),
+          const SizedBox(height: AppSpacing.xxxl),
 
           // Action buttons
           Row(
@@ -90,33 +90,32 @@ class ScrapeErrorView extends StatelessWidget {
               // Retry — outlined
               Expanded(
                 child: SizedBox(
-                  height: 48,
+                  height: AppSpacing.xxxxl,
                   child: OutlinedButton(
                     onPressed: onRetry,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
                       side: const BorderSide(color: AppColors.primary),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppRadius.borderSm,
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       '다시 시도',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
                 ),
               ),
 
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
 
               // Manual input — filled primary
               Expanded(
                 child: SizedBox(
-                  height: 48,
+                  height: AppSpacing.xxxxl,
                   child: ElevatedButton(
                     onPressed: onManualInput,
                     style: ElevatedButton.styleFrom(
@@ -124,14 +123,13 @@ class ScrapeErrorView extends StatelessWidget {
                       foregroundColor: AppColors.surface,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppRadius.borderSm,
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       '직접 입력하기',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: AppColors.onPrimary,
                       ),
                     ),
                   ),

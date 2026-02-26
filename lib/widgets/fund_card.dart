@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/fund.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
 
 class FundCard extends StatefulWidget {
   final Fund fund;
@@ -22,6 +25,7 @@ class FundCard extends StatefulWidget {
 class _FundCardState extends State<FundCard> {
   late Timer _timer;
   late Duration _remaining;
+  bool _isHovered = false;
 
   @override
   void initState() {
@@ -63,25 +67,39 @@ class _FundCardState extends State<FundCard> {
   Widget build(BuildContext context) {
     final fund = widget.fund;
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFF0F0F0), width: 1),
-        ),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          transform: Matrix4.translationValues(0, _isHovered ? -2 : 0, 0),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceElevated,
+            borderRadius: AppRadius.borderMd,
+            boxShadow: [
+              BoxShadow(
+                color: _isHovered
+                    ? AppColors.shadowMedium
+                    : AppColors.shadowLight,
+                offset: Offset(0, _isHovered ? 4 : 1),
+                blurRadius: _isHovered ? 12 : 3,
+              ),
+            ],
+          ),
         clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 1. Image with timer badge and optional progress overlay
             AspectRatio(
-              aspectRatio: 0.8,
+              aspectRatio: 0.85,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Image with top-only rounded corners
                   ClipRRect(
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(12),
@@ -91,12 +109,12 @@ class _FundCardState extends State<FundCard> {
                       fund.imageUrl,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, _) => Container(
-                        color: AppColors.background,
+                        color: AppColors.surface,
                         child: const Center(
                           child: Icon(
                             Icons.fastfood,
                             size: 40,
-                            color: AppColors.textDisabled,
+                            color: AppColors.textTertiary,
                           ),
                         ),
                       ),
@@ -105,30 +123,25 @@ class _FundCardState extends State<FundCard> {
 
                   // Timer badge — top left
                   Positioned(
-                    top: 6,
-                    left: 6,
+                    top: AppSpacing.sm,
+                    left: AppSpacing.sm,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 3,
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xs,
                       ),
                       decoration: BoxDecoration(
                         color: const Color(0xCC000000),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: AppRadius.borderXs,
                       ),
                       child: Text(
                         _formatDuration(_remaining),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.2,
-                        ),
+                        style: AppTextStyles.countdownSmall,
                       ),
                     ),
                   ),
 
-                  // Progress overlay — bottom of image, only for featured card
+                  // Progress overlay — bottom of image
                   if (widget.showProgressOverlay)
                     Positioned(
                       left: 0,
@@ -136,7 +149,9 @@ class _FundCardState extends State<FundCard> {
                       bottom: 0,
                       child: Container(
                         color: const Color(0xCC000000),
-                        padding: const EdgeInsets.fromLTRB(8, 5, 8, 6),
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.sm, 5, AppSpacing.sm, 6,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -145,30 +160,30 @@ class _FundCardState extends State<FundCard> {
                               children: [
                                 Text(
                                   '${_formatPrice(fund.currentParticipants).replaceAll('원', '')}개',
-                                  style: const TextStyle(
-                                    color: Color(0xFFFF6B35),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                    color: AppColors.accent,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                                 Text(
                                   '목표 ${_formatPrice(fund.maxParticipants).replaceAll('원', '')}개',
-                                  style: const TextStyle(
-                                    color: Color(0xCCFFFFFF),
-                                    fontSize: 11,
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                    color: AppColors.textInverse
+                                        .withValues(alpha: 0.8),
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: AppSpacing.xs),
                             ClipRRect(
                               borderRadius: BorderRadius.circular(2),
                               child: LinearProgressIndicator(
                                 value: fund.progressRatio,
                                 minHeight: 3,
                                 backgroundColor: const Color(0x55FFFFFF),
-                                valueColor: const AlwaysStoppedAnimation<Color>(
-                                  Color(0xFFFF6B35),
+                                valueColor:
+                                    const AlwaysStoppedAnimation<Color>(
+                                  AppColors.accent,
                                 ),
                               ),
                             ),
@@ -182,14 +197,16 @@ class _FundCardState extends State<FundCard> {
 
             // 2. Text area
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.md,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 3. Tags row
+                  // Tags row
                   if (fund.freeShipping)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: Row(
                         children: [
                           _Tag(label: '무료배송'),
@@ -197,71 +214,57 @@ class _FundCardState extends State<FundCard> {
                       ),
                     ),
 
-                  // 4. Product name
+                  // Product name
                   Text(
                     fund.productName,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.normal,
-                      color: Color(0xFF333333),
-                      height: 1.4,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                   ),
 
-                  const SizedBox(height: 6),
+                  const SizedBox(height: AppSpacing.sm),
 
-                  // 5. Price section
-                  // Line 1: 공구가 + main price + original price
+                  // Price section
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.baseline,
                     textBaseline: TextBaseline.alphabetic,
                     children: [
-                      const Text(
+                      Text(
                         '공구가 ',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFFF3B30),
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: AppColors.priceRed,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       Text(
                         _formatPrice(fund.startPrice),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1A1A),
-                        ),
+                        style: AppTextStyles.priceCard,
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppSpacing.xs),
                       Text(
                         _formatPrice(fund.targetPrice),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF999999),
-                          decoration: TextDecoration.lineThrough,
-                          decorationColor: Color(0xFF999999),
-                        ),
+                        style: AppTextStyles.priceStrike,
                       ),
                     ],
                   ),
 
                   const SizedBox(height: 2),
 
-                  // Line 2: 최대혜택가
+                  // 최대혜택가
                   Text(
                     '최대혜택가 ${_formatPrice(fund.targetPrice)}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFFF3B30),
+                    style: AppTextStyles.labelMedium.copyWith(
+                      color: AppColors.priceRed,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
               ),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -276,16 +279,18 @@ class _Tag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 2,
+      ),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: AppColors.border, width: 1),
+        borderRadius: AppRadius.borderXs,
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          fontSize: 10,
-          color: Color(0xFF666666),
+        style: AppTextStyles.caption.copyWith(
+          color: AppColors.textSecondary,
         ),
       ),
     );

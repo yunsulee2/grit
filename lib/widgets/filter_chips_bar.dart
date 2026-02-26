@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
 
 const _filterData = [
   {'emoji': '🔥', 'label': '마감임박'},
@@ -38,13 +41,13 @@ class FilterChipsBar extends StatelessWidget {
           ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.only(
-              left: 16,
-              right: 8,
+              left: AppSpacing.lg,
+              right: AppSpacing.sm,
               top: 7,
               bottom: 7,
             ),
             itemCount: filters.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
             itemBuilder: (context, index) {
               final filter = filters[index];
               final isActive = selected.contains(filter);
@@ -59,20 +62,19 @@ class FilterChipsBar extends StatelessWidget {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isActive
-                        ? const Color(0xFFFFF3EC)
+                        ? AppColors.warningMuted
                         : AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: AppRadius.borderFull,
                     border: Border.all(
                       color: isActive
                           ? AppColors.primary
-                          : const Color(0xFFE0E0E0),
+                          : AppColors.border,
                       width: 1,
                     ),
                   ),
                   child: Text(
                     label,
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: AppTextStyles.bodyMedium.copyWith(
                       color: isActive
                           ? AppColors.primary
                           : AppColors.textPrimary,
@@ -94,13 +96,13 @@ class FilterChipsBar extends StatelessWidget {
                 IgnorePointer(
                   child: Container(
                     width: 32,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                         colors: [
-                          Color(0x00FFFFFF),
-                          Color(0xFFFFFFFF),
+                          AppColors.surface.withValues(alpha: 0),
+                          AppColors.surface,
                         ],
                       ),
                     ),
@@ -108,12 +110,12 @@ class FilterChipsBar extends StatelessWidget {
                 ),
                 Container(
                   color: AppColors.surface,
-                  padding: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.only(right: AppSpacing.sm),
                   alignment: Alignment.center,
                   child: const Icon(
                     Icons.chevron_right,
                     size: 18,
-                    color: Color(0xFF8E8E93),
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],

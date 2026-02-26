@@ -8,6 +8,8 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from parsers.coupang import parse_coupang
+from parsers.naver import parse_naver
+from parsers.kakao import parse_kakao
 from parsers.generic import parse_generic
 
 app = FastAPI(title="Grit Scraping Server")
@@ -33,11 +35,6 @@ HTTP_HEADERS = {
     "Accept-Language": "ko-KR,ko;q=0.9",
 }
 
-# Sites known to have aggressive bot protection
-BLOCKED_SITES = {
-    "coupang": "쿠팡",
-    "naver": "네이버",
-}
 
 
 class ScrapeRequest(BaseModel):
@@ -49,7 +46,12 @@ def _detect_site(url: str) -> str:
         hostname = urlparse(url).hostname or ""
         if "coupang.com" in hostname:
             return "coupang"
-        if "naver.com" in hostname or "smartstore.naver.com" in hostname:
+        if (
+            "smartstore.naver.com" in hostname
+            or "brand.naver.com" in hostname
+            or "shopping.naver.com" in hostname
+            or "search.shopping.naver.com" in hostname
+        ):
             return "naver"
         if "kakao.com" in hostname or "kakaopage.com" in hostname:
             return "kakao"
@@ -83,8 +85,12 @@ async def scrape(request: ScrapeRequest):
     try:
         if site == "coupang":
             data = await parse_coupang(url)
+        elif site == "naver":
+            data = await parse_naver(url)
+        elif site == "kakao":
+            data = await parse_kakao(url)
         else:
-            # All other sites use the generic parser (layered httpx → Playwright)
+            # All other sites (food brands, etc.) use layered generic parser
             data = await parse_generic(url)
             data["detectedSite"] = _site_display_name(site)
 
@@ -131,8 +137,20 @@ async def proxy_image(url: str = Query(..., description="Original image URL to p
 
     # Determine referer from image URL domain
     parsed = urlparse(url)
-    referer = f"{parsed.scheme}://{parsed.hostname}/"
+    hostname = parsed.hostname or ""
+    referer = f"{parsed.scheme}://{hostname}/"
 
+    # Try curl_cffi first (better TLS fingerprinting for Naver/Coupang images)
+    try:
+        from parsers.http_client import fetch_image_with_curl
+
+        image_bytes, content_type = await fetch_image_with_curl(url, referer=referer)
+        _image_cache[url] = (image_bytes, content_type, now)
+        return Response(content=image_bytes, media_type=content_type)
+    except Exception as e:
+        print(f"[proxy] curl_cffi failed for image, falling back to httpx: {e}")
+
+    # Fallback to httpx
     headers = {
         **HTTP_HEADERS,
         "Referer": referer,
@@ -152,7 +170,6 @@ async def proxy_image(url: str = Query(..., description="Original image URL to p
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Image proxy error: {e}")
 
-    # Store in cache
     _image_cache[url] = (image_bytes, content_type, now)
 
     return Response(content=image_bytes, media_type=content_type)

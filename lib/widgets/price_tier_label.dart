@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:grit/models/fund.dart';
-import 'package:grit/theme/app_colors.dart';
-import 'package:grit/utils/formatters.dart';
+import '../models/fund.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
+import '../utils/formatters.dart';
 
 class PriceTierLabel extends StatelessWidget {
   final List<PriceTier> tiers;
@@ -80,8 +81,7 @@ class _TierItem extends StatelessWidget {
         Text(
           _label,
           textAlign: _textAlign,
-          style: TextStyle(
-            fontSize: 11,
+          style: AppTextStyles.labelSmall.copyWith(
             color: color,
             fontWeight: _achieved ? FontWeight.w600 : FontWeight.normal,
           ),
@@ -90,8 +90,7 @@ class _TierItem extends StatelessWidget {
         Text(
           formatPrice(tier.price),
           textAlign: _textAlign,
-          style: TextStyle(
-            fontSize: 13,
+          style: AppTextStyles.bodyMedium.copyWith(
             fontWeight: FontWeight.bold,
             color: color,
           ),

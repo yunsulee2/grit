@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
 
 class CategoryTabs extends StatelessWidget {
   final List<String> categories;
@@ -22,11 +25,11 @@ class CategoryTabs extends StatelessWidget {
         final fontSize = categories.length > 6 ? 11.0 : 13.0;
 
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
+          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           decoration: BoxDecoration(
             border: Border.all(color: AppColors.border),
-            borderRadius: BorderRadius.circular(8),
-            color: Colors.white,
+            borderRadius: AppRadius.borderSm,
+            color: AppColors.surfaceElevated,
           ),
           height: 44,
           child: Row(
@@ -39,20 +42,20 @@ class CategoryTabs extends StatelessWidget {
                     margin: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
                       color: isActive
-                          ? const Color(0xFF1A1A1A)
+                          ? AppColors.textPrimary
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     alignment: Alignment.center,
                     child: Text(
                       categories[i],
-                      style: TextStyle(
+                      style: AppTextStyles.bodyMedium.copyWith(
                         fontSize: fontSize,
                         fontWeight:
                             isActive ? FontWeight.bold : FontWeight.normal,
                         color: isActive
-                            ? Colors.white
-                            : const Color(0xFF666666),
+                            ? AppColors.textInverse
+                            : AppColors.textSecondary,
                       ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,

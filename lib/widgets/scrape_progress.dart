@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
 
 class ScrapeProgressView extends StatelessWidget {
   final int currentStep; // 1-4
@@ -24,35 +26,33 @@ class ScrapeProgressView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 48,
-              height: 48,
+              width: AppSpacing.xxxxl,
+              height: AppSpacing.xxxxl,
               child: CircularProgressIndicator(
                 strokeWidth: 3.5,
                 valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xxxl),
             _StepRow(currentStep: currentStep, steps: _steps),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.xl),
             Text(
               message,
-              style: const TextStyle(
-                fontSize: 14,
+              style: AppTextStyles.bodyLarge.copyWith(
                 color: AppColors.textSecondary,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               '약 $estimatedSeconds초 정도 소요됩니다',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textDisabled,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textTertiary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -119,7 +119,7 @@ class _StepItem extends StatelessWidget {
           width: 28,
           height: 28,
           child: isCompleted
-              ? Icon(Icons.check_circle, color: AppColors.successGreen, size: 28)
+              ? Icon(Icons.check_circle, color: AppColors.success, size: 28)
               : isActive
                   ? Container(
                       decoration: const BoxDecoration(
@@ -129,9 +129,8 @@ class _StepItem extends StatelessWidget {
                       alignment: Alignment.center,
                       child: Text(
                         '$index',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textInverse,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -141,7 +140,7 @@ class _StepItem extends StatelessWidget {
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isPending
-                              ? AppColors.textDisabled
+                              ? AppColors.textTertiary
                               : AppColors.primary,
                           width: 1.5,
                         ),
@@ -149,11 +148,10 @@ class _StepItem extends StatelessWidget {
                       alignment: Alignment.center,
                       child: Text(
                         '$index',
-                        style: TextStyle(
+                        style: AppTextStyles.bodyMedium.copyWith(
                           color: isPending
-                              ? AppColors.textDisabled
+                              ? AppColors.textTertiary
                               : AppColors.primary,
-                          fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -162,15 +160,13 @@ class _StepItem extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight:
-                isActive ? FontWeight.bold : FontWeight.normal,
+          style: AppTextStyles.bodySmall.copyWith(
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
             color: isActive
                 ? AppColors.primary
                 : isCompleted
-                    ? AppColors.successGreen
-                    : AppColors.textDisabled,
+                    ? AppColors.success
+                    : AppColors.textTertiary,
           ),
         ),
       ],
@@ -196,7 +192,7 @@ class _ConnectorLine extends StatelessWidget {
         alignment: Alignment.center,
         child: Container(
           height: 2,
-          color: completed ? AppColors.successGreen : AppColors.border,
+          color: completed ? AppColors.success : AppColors.border,
         ),
       ),
     );

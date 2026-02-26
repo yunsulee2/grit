@@ -1,16 +1,14 @@
 """
 Coupang product parser.
 
-Coupang uses aggressive Akamai bot protection that blocks:
-- httpx/requests (403)
-- curl (403)
-- Playwright headless & non-headless (Access Denied)
-- curl_cffi with TLS impersonation (JS challenge)
-
 Strategy:
-1. Try curl_cffi with session cookies (best chance)
-2. Try Playwright as fallback
-3. If blocked, return clear error with guidance
+1. curl_cffi with Chrome TLS impersonation (bypasses Akamai TLS fingerprinting)
+2. nodriver (real Chrome via CDP) fallback for full JS rendering
+
+Akamai WAF checks:
+- TLS fingerprint (JA3/JA4) → curl_cffi handles this
+- HTTP/2 fingerprint → curl_cffi handles this
+- JavaScript challenges → nodriver handles this
 """
 
 import re
@@ -91,7 +89,9 @@ def _parse_html(html: str, url: str) -> dict:
         if not result["productName"]:
             og_title = soup.find("meta", property="og:title")
             if og_title and og_title.get("content"):
-                result["productName"] = og_title["content"].strip()
+                title = og_title["content"].strip()
+                title = re.sub(r"\s*[-|].*?쿠팡.*$", "", title)
+                result["productName"] = title
 
     # brandName
     brand_tag = soup.select_one("a.prod-brand-name")
@@ -166,7 +166,9 @@ def _parse_html(html: str, url: str) -> dict:
     if detail_container:
         details = []
         for img in detail_container.select("img"):
-            src = _normalize_image(img.get("src") or img.get("data-src") or img.get("data-img"))
+            src = _normalize_image(
+                img.get("src") or img.get("data-src") or img.get("data-img")
+            )
             if src and src not in details:
                 details.append(src)
         result["detailImages"] = details
@@ -177,7 +179,9 @@ def _parse_html(html: str, url: str) -> dict:
         result["category"] = " > ".join(a.get_text(strip=True) for a in breadcrumbs)
 
     # origin & weight
-    attr_rows = soup.select("table.prod-attr-table tr, div.prod-attr-item, li.prod-attr-item")
+    attr_rows = soup.select(
+        "table.prod-attr-table tr, div.prod-attr-item, li.prod-attr-item"
+    )
     for row in attr_rows:
         text = row.get_text()
         if "원산지" in text and not result["origin"]:
@@ -203,97 +207,61 @@ def _parse_html(html: str, url: str) -> dict:
     return result
 
 
-async def _try_curl_cffi(url: str) -> str | None:
-    """Try fetching with curl_cffi (TLS fingerprint impersonation)."""
-    try:
-        from curl_cffi import requests as cffi_requests
-
-        session = cffi_requests.Session(impersonate="chrome")
-        # Warm up with homepage cookies
-        session.get("https://www.coupang.com/", headers={
-            "Accept-Language": "ko-KR,ko;q=0.9",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        })
-        # Fetch product page
-        r = session.get(url, headers={
-            "Accept-Language": "ko-KR,ko;q=0.9",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Referer": "https://www.coupang.com/",
-        })
-        if r.status_code == 200 and len(r.text) > 5000:
-            if "prod-buy-header" in r.text or "og:title" in r.text:
-                return r.text
-    except Exception as e:
-        print(f"[coupang] curl_cffi error: {e}")
-    return None
-
-
-async def _try_playwright(url: str) -> str | None:
-    """Try fetching with Playwright headless browser."""
-    try:
-        from playwright.async_api import async_playwright
-    except ImportError:
-        return None
-
-    try:
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(
-                headless=True,
-                args=["--disable-blink-features=AutomationControlled"],
-            )
-            context = await browser.new_context(
-                user_agent=(
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/131.0.0.0 Safari/537.36"
-                ),
-                locale="ko-KR",
-                viewport={"width": 1920, "height": 1080},
-            )
-            page = await context.new_page()
-            await page.add_init_script(
-                'Object.defineProperty(navigator, "webdriver", {get: () => undefined});'
-            )
-            await page.route("**/*.{mp4,webm,ogg,mp3,wav}", lambda route: route.abort())
-
-            try:
-                await page.goto(url, wait_until="domcontentloaded", timeout=20000)
-                await page.wait_for_timeout(3000)
-                await page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2)")
-                await page.wait_for_timeout(1000)
-                await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-                await page.wait_for_timeout(1000)
-                html = await page.content()
-            finally:
-                await browser.close()
-
-            if "Access Denied" in html or len(html) < 1000:
-                return None
-            return html
-    except Exception as e:
-        print(f"[coupang] Playwright error: {e}")
-    return None
-
-
 async def parse_coupang(url: str) -> dict:
     """
     Parse a Coupang product page.
-    Tries multiple methods to bypass bot protection.
+
+    Layer 1: curl_cffi with Chrome TLS impersonation (bypasses Akamai TLS check)
+    Layer 2: nodriver (real Chrome via CDP, bypasses JS challenges)
     """
-    # Method 1: curl_cffi
-    print(f"[coupang] Trying curl_cffi for {url}")
-    html = await _try_curl_cffi(url)
+    # Layer 1: curl_cffi
+    try:
+        from parsers.http_client import fetch_with_curl
 
-    # Method 2: Playwright
-    if not html:
-        print("[coupang] curl_cffi failed, trying Playwright...")
-        html = await _try_playwright(url)
+        print(f"[coupang] Fetching with curl_cffi: {url}")
+        html = await fetch_with_curl(
+            url,
+            warmup_url="https://www.coupang.com/",
+            referer="https://www.coupang.com/",
+        )
+        print(f"[coupang] curl_cffi got {len(html)} bytes")
 
-    # Both failed — Akamai blocked us
-    if not html:
+        result = _parse_html(html, url)
+        if result.get("productName") or result.get("mainImage"):
+            print(f"[coupang] curl_cffi success: {result.get('productName', '(no name)')}")
+            return result
+        print("[coupang] curl_cffi got HTML but no product data, escalating...")
+    except Exception as e:
+        print(f"[coupang] curl_cffi failed: {e}")
+
+    # Layer 2: nodriver (real Chrome, anti-detection)
+    try:
+        from parsers.browser import fetch_with_nodriver
+
+        print(f"[coupang] Fetching with nodriver: {url}")
+        html = await fetch_with_nodriver(
+            url,
+            warmup_url="https://www.coupang.com/",
+            wait_seconds=5,
+        )
+        print(f"[coupang] nodriver got {len(html)} bytes")
+
+        result = _parse_html(html, url)
+        if result.get("productName") or result.get("mainImage"):
+            print("[coupang] nodriver extraction successful")
+            return result
+        # Return partial data
+        return result
+    except ImportError:
+        print("[coupang] nodriver not available")
+    except Exception as e:
+        print(f"[coupang] nodriver failed: {e}")
         raise RuntimeError(
-            "쿠팡의 보안 시스템(Akamai)에 의해 자동 접근이 차단되었습니다. "
+            "쿠팡의 보안 시스템에 의해 자동 접근이 차단되었습니다. "
             "상품 정보를 직접 입력해 주세요."
         )
 
-    return _parse_html(html, url)
+    raise RuntimeError(
+        "쿠팡 상품 페이지에 접근할 수 없습니다. "
+        "URL을 확인하거나 상품 정보를 직접 입력해 주세요."
+    )
