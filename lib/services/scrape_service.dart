@@ -62,12 +62,14 @@ class ScrapeService {
       sourceUrl: url,
       detectedSite: siteName,
       status: ScrapeStatus.crawling,
-      progress: const ScrapeProgress(
+      progress: ScrapeProgress(
         step: 1,
         totalSteps: totalSteps,
-        message: '페이지에 접속하고 있습니다...',
+        message: site == 'naver'
+            ? '네이버에 접속 중... 보안 확인이 필요하면 Chrome에서 풀어주세요'
+            : '페이지에 접속하고 있습니다...',
       ),
-      estimatedSeconds: 8,
+      estimatedSeconds: site == 'naver' ? 30 : 8,
       createdAt: createdAt,
     );
 
@@ -78,7 +80,7 @@ class ScrapeService {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'url': url}),
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 180));
 
       // Step 2: parsing
       yield ScrapeJob(
