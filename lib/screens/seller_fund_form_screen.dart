@@ -1,0 +1,974 @@
+import 'package:flutter/material.dart';
+import '../models/fund.dart';
+import '../theme/app_colors.dart';
+import '../utils/formatters.dart';
+import '../widgets/step_indicator.dart';
+import '../widgets/price_tier_input.dart';
+import '../widgets/price_tier_preview.dart';
+
+class SellerFundFormScreen extends StatefulWidget {
+  const SellerFundFormScreen({super.key});
+
+  @override
+  State<SellerFundFormScreen> createState() => _SellerFundFormScreenState();
+}
+
+class _SellerFundFormScreenState extends State<SellerFundFormScreen> {
+  int _currentStep = 1;
+  static const int _totalSteps = 5;
+
+  // Step 1
+  final _productNameCtrl = TextEditingController();
+  String _category = '닭가슴살';
+  final _descriptionCtrl = TextEditingController();
+
+  // Step 2
+  List<String> _options = ['기본'];
+
+  // Step 3
+  List<_TierData> _tiers = [
+    _TierData(minParticipants: 1, price: 0),
+    _TierData(minParticipants: 100, price: 0),
+  ];
+
+  // Step 4
+  final _startDateCtrl = TextEditingController(text: '2026-03-01');
+  final _endDateCtrl = TextEditingController(text: '2026-03-31');
+  final _minParticipantsCtrl = TextEditingController();
+  final _maxParticipantsCtrl = TextEditingController(text: '500');
+  final _shippingFeeCtrl = TextEditingController(text: '0');
+  String _shippingMethod = '택배';
+
+  static const List<String> _categories = [
+    '닭가슴살',
+    '프로틴',
+    '간식/간편식',
+    '음료',
+    '도시락',
+    '샐러드',
+  ];
+
+  static const List<String> _shippingMethods = [
+    '택배',
+    '새벽배송',
+    '직접배송',
+    '편의점 픽업',
+  ];
+
+  @override
+  void dispose() {
+    _productNameCtrl.dispose();
+    _descriptionCtrl.dispose();
+    _startDateCtrl.dispose();
+    _endDateCtrl.dispose();
+    _minParticipantsCtrl.dispose();
+    _maxParticipantsCtrl.dispose();
+    _shippingFeeCtrl.dispose();
+    super.dispose();
+  }
+
+  void _goNext() {
+    if (_currentStep < _totalSteps) {
+      setState(() => _currentStep++);
+    }
+  }
+
+  void _goPrev() {
+    if (_currentStep > 1) {
+      setState(() => _currentStep--);
+    }
+  }
+
+  void _submit() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('펀드가 성공적으로 게시되었습니다!'),
+        backgroundColor: AppColors.successGreen,
+      ),
+    );
+    Navigator.pop(context);
+  }
+
+  List<PriceTier> get _priceTiers => _tiers
+      .map((t) => PriceTier(minParticipants: t.minParticipants, price: t.price))
+      .toList();
+
+  int get _maxParticipantsValue =>
+      int.tryParse(_maxParticipantsCtrl.text) ?? 100;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('새 펀드 만들기'),
+      ),
+      body: Column(
+        children: [
+          Container(
+            color: AppColors.surface,
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            child: StepIndicator(
+              totalSteps: _totalSteps,
+              currentStep: _currentStep,
+            ),
+          ),
+          Expanded(
+            child: IndexedStack(
+              index: _currentStep - 1,
+              children: [
+                _Step1(
+                  productNameCtrl: _productNameCtrl,
+                  category: _category,
+                  categories: _categories,
+                  descriptionCtrl: _descriptionCtrl,
+                  onCategoryChanged: (v) => setState(() => _category = v!),
+                ),
+                _Step2(
+                  options: _options,
+                  onOptionsChanged: (opts) => setState(() => _options = opts),
+                ),
+                _Step3(
+                  tiers: _tiers,
+                  maxParticipants: _maxParticipantsValue,
+                  onTiersChanged: (t) => setState(() => _tiers = t),
+                ),
+                _Step4(
+                  startDateCtrl: _startDateCtrl,
+                  endDateCtrl: _endDateCtrl,
+                  minParticipantsCtrl: _minParticipantsCtrl,
+                  maxParticipantsCtrl: _maxParticipantsCtrl,
+                  shippingFeeCtrl: _shippingFeeCtrl,
+                  shippingMethod: _shippingMethod,
+                  shippingMethods: _shippingMethods,
+                  onShippingMethodChanged: (v) =>
+                      setState(() => _shippingMethod = v!),
+                ),
+                _Step5(
+                  productName: _productNameCtrl.text,
+                  category: _category,
+                  description: _descriptionCtrl.text,
+                  options: _options,
+                  tiers: _priceTiers,
+                  maxParticipants: _maxParticipantsValue,
+                  startDate: _startDateCtrl.text,
+                  endDate: _endDateCtrl.text,
+                  minParticipants: _minParticipantsCtrl.text,
+                  shippingFee: _shippingFeeCtrl.text,
+                  shippingMethod: _shippingMethod,
+                  onSubmit: _submit,
+                  onEdit: _goPrev,
+                ),
+              ],
+            ),
+          ),
+          _BottomButtons(
+            currentStep: _currentStep,
+            totalSteps: _totalSteps,
+            onPrev: _goPrev,
+            onNext: _goNext,
+            onSubmit: _submit,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Bottom Navigation Buttons ────────────────────────────────────────────────
+
+class _BottomButtons extends StatelessWidget {
+  final int currentStep;
+  final int totalSteps;
+  final VoidCallback onPrev;
+  final VoidCallback onNext;
+  final VoidCallback onSubmit;
+
+  const _BottomButtons({
+    required this.currentStep,
+    required this.totalSteps,
+    required this.onPrev,
+    required this.onNext,
+    required this.onSubmit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // On step 5, the action buttons are inside the step itself
+    if (currentStep == totalSteps) return const SizedBox.shrink();
+
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      child: Row(
+        children: [
+          if (currentStep > 1) ...[
+            Expanded(
+              child: OutlinedButton(
+                onPressed: onPrev,
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  '이전',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            flex: 2,
+            child: ElevatedButton(
+              onPressed: onNext,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                '다음',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Step 1: 기본 정보 ─────────────────────────────────────────────────────────
+
+class _Step1 extends StatelessWidget {
+  final TextEditingController productNameCtrl;
+  final String category;
+  final List<String> categories;
+  final TextEditingController descriptionCtrl;
+  final ValueChanged<String?> onCategoryChanged;
+
+  const _Step1({
+    required this.productNameCtrl,
+    required this.category,
+    required this.categories,
+    required this.descriptionCtrl,
+    required this.onCategoryChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _StepTitle('기본 정보'),
+          const SizedBox(height: 16),
+          _FormLabel('상품명'),
+          const SizedBox(height: 6),
+          _StyledTextField(
+            controller: productNameCtrl,
+            hint: '상품명을 입력하세요',
+          ),
+          const SizedBox(height: 16),
+          _FormLabel('카테고리'),
+          const SizedBox(height: 6),
+          _StyledDropdown<String>(
+            value: category,
+            items: categories,
+            onChanged: onCategoryChanged,
+          ),
+          const SizedBox(height: 16),
+          _FormLabel('상품 설명'),
+          const SizedBox(height: 6),
+          _StyledTextField(
+            controller: descriptionCtrl,
+            hint: '상품에 대한 자세한 설명을 입력하세요',
+            maxLines: 4,
+          ),
+          const SizedBox(height: 16),
+          _FormLabel('상품 이미지'),
+          const SizedBox(height: 6),
+          Container(
+            height: 120,
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              border: Border.all(
+                color: AppColors.border,
+                style: BorderStyle.solid,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.camera_alt_outlined,
+                      size: 32, color: AppColors.textSecondary),
+                  SizedBox(height: 8),
+                  Text(
+                    '이미지 추가',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Step 2: 옵션 설정 ─────────────────────────────────────────────────────────
+
+class _Step2 extends StatelessWidget {
+  final List<String> options;
+  final ValueChanged<List<String>> onOptionsChanged;
+
+  const _Step2({required this.options, required this.onOptionsChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _StepTitle('옵션 설정'),
+          const SizedBox(height: 16),
+          ...List.generate(options.length, (i) {
+            final ctrl = TextEditingController(text: options[i]);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: ctrl,
+                      decoration: InputDecoration(
+                        labelText: '옵션명',
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide:
+                              const BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide:
+                              const BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide:
+                              const BorderSide(color: AppColors.primary),
+                        ),
+                      ),
+                      onChanged: (val) {
+                        final updated = List<String>.from(options);
+                        updated[i] = val;
+                        onOptionsChanged(updated);
+                      },
+                    ),
+                  ),
+                  if (i > 0) ...[
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () {
+                        final updated = List<String>.from(options)
+                          ..removeAt(i);
+                        onOptionsChanged(updated);
+                      },
+                      child: const Icon(Icons.close,
+                          color: AppColors.textSecondary, size: 20),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 4),
+          GestureDetector(
+            onTap: () {
+              onOptionsChanged([...options, '']);
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: AppColors.primary,
+                  style: BorderStyle.solid,
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Center(
+                child: Text(
+                  '+ 옵션 추가',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Step 3: 가격 설정 ─────────────────────────────────────────────────────────
+
+class _TierData {
+  int minParticipants;
+  int price;
+
+  _TierData({required this.minParticipants, required this.price});
+}
+
+class _Step3 extends StatelessWidget {
+  final List<_TierData> tiers;
+  final int maxParticipants;
+  final ValueChanged<List<_TierData>> onTiersChanged;
+
+  const _Step3({
+    required this.tiers,
+    required this.maxParticipants,
+    required this.onTiersChanged,
+  });
+
+  List<PriceTier> get _priceTiers => tiers
+      .map((t) =>
+          PriceTier(minParticipants: t.minParticipants, price: t.price))
+      .toList();
+
+  @override
+  Widget build(BuildContext context) {
+    final basePrice = tiers.isNotEmpty ? tiers[0].price : null;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _StepTitle('가격 설정'),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline, size: 16, color: AppColors.primary),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '사람이 많이 모일수록 가격이 내려가는 구조입니다.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...List.generate(tiers.length, (i) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: PriceTierInput(
+                index: i,
+                minParticipants: tiers[i].minParticipants,
+                price: tiers[i].price,
+                basePrice: i > 0 ? basePrice : null,
+                onChange: (min, price) {
+                  final updated = List<_TierData>.from(tiers);
+                  updated[i] = _TierData(minParticipants: min, price: price);
+                  onTiersChanged(updated);
+                },
+                onDelete: i == 0
+                    ? null
+                    : () {
+                        final updated = List<_TierData>.from(tiers)
+                          ..removeAt(i);
+                        onTiersChanged(updated);
+                      },
+              ),
+            );
+          }),
+          if (tiers.length < 5) ...[
+            GestureDetector(
+              onTap: () {
+                onTiersChanged([
+                  ...tiers,
+                  _TierData(minParticipants: 0, price: 0),
+                ]);
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: AppColors.primary,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Center(
+                  child: Text(
+                    '+ 단계 추가',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          PriceTierPreview(
+            tiers: _priceTiers,
+            maxParticipants: maxParticipants,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Step 4: 펀드 설정 ─────────────────────────────────────────────────────────
+
+class _Step4 extends StatelessWidget {
+  final TextEditingController startDateCtrl;
+  final TextEditingController endDateCtrl;
+  final TextEditingController minParticipantsCtrl;
+  final TextEditingController maxParticipantsCtrl;
+  final TextEditingController shippingFeeCtrl;
+  final String shippingMethod;
+  final List<String> shippingMethods;
+  final ValueChanged<String?> onShippingMethodChanged;
+
+  const _Step4({
+    required this.startDateCtrl,
+    required this.endDateCtrl,
+    required this.minParticipantsCtrl,
+    required this.maxParticipantsCtrl,
+    required this.shippingFeeCtrl,
+    required this.shippingMethod,
+    required this.shippingMethods,
+    required this.onShippingMethodChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _StepTitle('펀드 설정'),
+          const SizedBox(height: 16),
+          _FormLabel('펀드 기간'),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: _StyledTextField(
+                  controller: startDateCtrl,
+                  hint: '시작일 (YYYY-MM-DD)',
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Text('~',
+                    style: TextStyle(
+                        fontSize: 16, color: AppColors.textSecondary)),
+              ),
+              Expanded(
+                child: _StyledTextField(
+                  controller: endDateCtrl,
+                  hint: '종료일 (YYYY-MM-DD)',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _FormLabel('최소 참여 인원'),
+          const SizedBox(height: 6),
+          _StyledTextField(
+            controller: minParticipantsCtrl,
+            hint: '최소 참여 인원 수',
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 16),
+          _FormLabel('최대 참여 인원'),
+          const SizedBox(height: 6),
+          _StyledTextField(
+            controller: maxParticipantsCtrl,
+            hint: '최대 참여 인원 수',
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 16),
+          _FormLabel('배송비'),
+          const SizedBox(height: 6),
+          _StyledTextField(
+            controller: shippingFeeCtrl,
+            hint: '0원 = 무료배송',
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 16),
+          _FormLabel('배송 방법'),
+          const SizedBox(height: 6),
+          _StyledDropdown<String>(
+            value: shippingMethod,
+            items: shippingMethods,
+            onChanged: onShippingMethodChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Step 5: 미리보기 ──────────────────────────────────────────────────────────
+
+class _Step5 extends StatelessWidget {
+  final String productName;
+  final String category;
+  final String description;
+  final List<String> options;
+  final List<PriceTier> tiers;
+  final int maxParticipants;
+  final String startDate;
+  final String endDate;
+  final String minParticipants;
+  final String shippingFee;
+  final String shippingMethod;
+  final VoidCallback onSubmit;
+  final VoidCallback onEdit;
+
+  const _Step5({
+    required this.productName,
+    required this.category,
+    required this.description,
+    required this.options,
+    required this.tiers,
+    required this.maxParticipants,
+    required this.startDate,
+    required this.endDate,
+    required this.minParticipants,
+    required this.shippingFee,
+    required this.shippingMethod,
+    required this.onSubmit,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _StepTitle('미리보기'),
+          const SizedBox(height: 16),
+          _PreviewSection(
+            title: '기본 정보',
+            rows: [
+              _PreviewRow('상품명', productName.isEmpty ? '-' : productName),
+              _PreviewRow('카테고리', category),
+              _PreviewRow('설명', description.isEmpty ? '-' : description),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _PreviewSection(
+            title: '옵션',
+            rows: [
+              _PreviewRow('옵션', options.where((o) => o.isNotEmpty).join(', ')),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _PreviewSection(
+            title: '가격 구조',
+            rows: [
+              for (int i = 0; i < tiers.length; i++)
+                _PreviewRow(
+                  '단계 ${i + 1}',
+                  '${formatNumber(tiers[i].minParticipants)}명 이상 → ${formatPrice(tiers[i].price)}',
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (tiers.isNotEmpty) ...[
+            PriceTierPreview(
+              tiers: tiers,
+              maxParticipants: maxParticipants,
+            ),
+            const SizedBox(height: 12),
+          ],
+          _PreviewSection(
+            title: '펀드 설정',
+            rows: [
+              _PreviewRow('기간', '$startDate ~ $endDate'),
+              _PreviewRow('최소 참여', minParticipants.isEmpty ? '-' : '$minParticipants명'),
+              _PreviewRow('최대 참여', '${formatNumber(maxParticipants)}명'),
+              _PreviewRow('배송비', shippingFee == '0' || shippingFee.isEmpty ? '무료' : '$shippingFee원'),
+              _PreviewRow('배송 방법', shippingMethod),
+            ],
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: onSubmit,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 0,
+            ),
+            child: const Text(
+              '이대로 게시하기',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton(
+            onPressed: onEdit,
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppColors.border),
+              minimumSize: const Size(double.infinity, 52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              '수정하기',
+              style: TextStyle(
+                  fontSize: 16, color: AppColors.textSecondary),
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+class _PreviewSection extends StatelessWidget {
+  final String title;
+  final List<_PreviewRow> rows;
+
+  const _PreviewSection({required this.title, required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...rows,
+        ],
+      ),
+    );
+  }
+}
+
+class _PreviewRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _PreviewRow(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Shared Helpers ───────────────────────────────────────────────────────────
+
+class _StepTitle extends StatelessWidget {
+  final String text;
+  const _StepTitle(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: AppColors.textPrimary,
+      ),
+    );
+  }
+}
+
+class _FormLabel extends StatelessWidget {
+  final String text;
+  const _FormLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+      ),
+    );
+  }
+}
+
+class _StyledTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final String hint;
+  final int maxLines;
+  final TextInputType keyboardType;
+
+  const _StyledTextField({
+    required this.controller,
+    required this.hint,
+    this.maxLines = 1,
+    this.keyboardType = TextInputType.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: AppColors.textDisabled),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.primary),
+        ),
+        filled: true,
+        fillColor: AppColors.surface,
+      ),
+    );
+  }
+}
+
+class _StyledDropdown<T> extends StatelessWidget {
+  final T value;
+  final List<T> items;
+  final ValueChanged<T?> onChanged;
+
+  const _StyledDropdown({
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: DropdownButton<T>(
+        value: value,
+        isExpanded: true,
+        underline: const SizedBox(),
+        onChanged: onChanged,
+        items: items
+            .map((item) => DropdownMenuItem<T>(
+                  value: item,
+                  child: Text(
+                    item.toString(),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ))
+            .toList(),
+      ),
+    );
+  }
+}
