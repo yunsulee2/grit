@@ -12,6 +12,7 @@ enum ScrapeStatus {
 enum ScrapeErrorCode {
   invalidUrl,
   crawlBlocked,
+  captchaRequired,
   parseError,
   timeout,
   notProductPage,
