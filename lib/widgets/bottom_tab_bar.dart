@@ -14,7 +14,7 @@ class AppBottomTabBar extends StatelessWidget {
   static const List<_TabItem> _tabs = [
     _TabItem(icon: Icons.home, label: '홈'),
     _TabItem(icon: Icons.category, label: '카테고리'),
-    _TabItem(icon: Icons.store, label: '셀러 입점'),
+    _TabItem(icon: Icons.storefront, label: '판매'),
     _TabItem(icon: Icons.person, label: '마이'),
   ];
 

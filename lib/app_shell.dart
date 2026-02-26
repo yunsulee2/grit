@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/category_screen.dart';
-import 'screens/seller_apply_screen.dart';
+import 'screens/seller_dashboard_screen.dart';
 import 'screens/my_page_screen.dart';
 import 'widgets/bottom_tab_bar.dart';
 
@@ -28,9 +28,6 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth > 768;
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: IndexedStack(
@@ -38,17 +35,14 @@ class _AppShellState extends State<AppShell> {
         children: const [
           HomeScreen(),
           CategoryScreen(),
-          SellerApplyScreen(),
+          SellerDashboardScreen(),
           MyPageScreen(),
         ],
       ),
-      // Bottom tab bar only on mobile
-      bottomNavigationBar: isDesktop
-          ? null
-          : AppBottomTabBar(
-              currentIndex: _selectedIndex,
-              onTap: _onTabSelected,
-            ),
+      bottomNavigationBar: AppBottomTabBar(
+        currentIndex: _selectedIndex,
+        onTap: _onTabSelected,
+      ),
     );
   }
 }
