@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../services/scrape_service.dart';
 
 class DetailImageList extends StatefulWidget {
   final List<String> imageUrls;
@@ -68,8 +69,9 @@ class _DetailImageListState extends State<DetailImageList> {
         errorBuilder: (context, error, stack) => _buildErrorPlaceholder(),
       );
     }
+    final displayUrl = ScrapeService.proxyImageUrl(url);
     return Image.network(
-      url,
+      displayUrl,
       fit: BoxFit.cover,
       width: double.infinity,
       errorBuilder: (context, error, stack) => _buildErrorPlaceholder(),
