@@ -6,6 +6,7 @@ import '../utils/formatters.dart';
 import '../widgets/step_indicator.dart';
 import '../widgets/price_tier_input.dart';
 import '../widgets/price_tier_preview.dart';
+import '../services/fund_service.dart';
 
 class SellerFundFormScreen extends StatefulWidget {
   const SellerFundFormScreen({super.key});
@@ -110,14 +111,88 @@ class _SellerFundFormScreenState extends State<SellerFundFormScreen> {
     }
   }
 
-  void _submit() {
+  bool _isSubmitting = false;
+
+  void _showFieldError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('펀드가 성공적으로 게시되었습니다!'),
-        backgroundColor: AppColors.successGreen,
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.accentRed,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
       ),
     );
-    Navigator.pop(context);
+  }
+
+  Future<void> _submit() async {
+    // Validate Step 1: basic info
+    if (_productNameCtrl.text.trim().isEmpty) {
+      _showFieldError('상품명을 입력해주세요.');
+      setState(() => _currentStep = 1);
+      return;
+    }
+    if (_descriptionCtrl.text.trim().isEmpty) {
+      _showFieldError('상품 설명을 입력해주세요.');
+      setState(() => _currentStep = 1);
+      return;
+    }
+
+    // Validate Step 3: pricing — at least one tier with valid price
+    if (_tiers.isEmpty || _tiers.any((t) => t.price <= 0)) {
+      _showFieldError('가격을 올바르게 입력해주세요.');
+      setState(() => _currentStep = 3);
+      return;
+    }
+
+    // Validate Step 4: dates and max participants
+    if (_startDateCtrl.text.trim().isEmpty ||
+        _endDateCtrl.text.trim().isEmpty) {
+      _showFieldError('펀드 기간을 입력해주세요.');
+      setState(() => _currentStep = 4);
+      return;
+    }
+    if (_maxParticipantsCtrl.text.trim().isEmpty) {
+      _showFieldError('최대 참여 인원을 입력해주세요.');
+      setState(() => _currentStep = 4);
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    final success = await FundService.instance.submitFund({
+      'productName': _productNameCtrl.text.trim(),
+      'category': _category,
+      'description': _descriptionCtrl.text.trim(),
+      'options': _options,
+      'tiers': _tiers
+          .map((t) => {
+                'minParticipants': t.minParticipants,
+                'price': t.price,
+              })
+          .toList(),
+      'startDate': _startDateCtrl.text.trim(),
+      'endDate': _endDateCtrl.text.trim(),
+      'minParticipants': _minParticipantsCtrl.text.trim(),
+      'maxParticipants': _maxParticipantsCtrl.text.trim(),
+      'shippingFee': _shippingFeeCtrl.text.trim(),
+      'shippingMethod': _shippingMethod,
+    });
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('펀드가 성공적으로 게시되었습니다!'),
+          backgroundColor: AppColors.successGreen,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      // Navigate to seller dashboard
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      Navigator.pushNamed(context, '/seller/dashboard');
+    }
   }
 
   List<PriceTier> get _priceTiers => _tiers
@@ -193,6 +268,7 @@ class _SellerFundFormScreenState extends State<SellerFundFormScreen> {
                   shippingMethod: _shippingMethod,
                   onSubmit: _submit,
                   onEdit: _goPrev,
+                  isSubmitting: _isSubmitting,
                 ),
               ],
             ),
@@ -873,6 +949,7 @@ class _Step5 extends StatelessWidget {
   final String shippingMethod;
   final VoidCallback onSubmit;
   final VoidCallback onEdit;
+  final bool isSubmitting;
 
   const _Step5({
     required this.productName,
@@ -888,6 +965,7 @@ class _Step5 extends StatelessWidget {
     required this.shippingMethod,
     required this.onSubmit,
     required this.onEdit,
+    this.isSubmitting = false,
   });
 
   @override
@@ -945,20 +1023,33 @@ class _Step5 extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: onSubmit,
+            onPressed: isSubmitting ? null : onSubmit,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
+              disabledBackgroundColor:
+                  AppColors.primary.withValues(alpha: 0.6),
               minimumSize: const Size(double.infinity, 52),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
               elevation: 0,
             ),
-            child: const Text(
-              '이대로 게시하기',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            child: isSubmitting
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Text(
+                    '이대로 게시하기',
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
           ),
           const SizedBox(height: 10),
           OutlinedButton(

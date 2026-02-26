@@ -80,9 +80,9 @@ class _HomeScreenState extends State<HomeScreen> {
           GNB(
             activeNavIndex: 0,
             onLogoTap: () {},
-            onSearch: () {},
+            onSearch: () => Navigator.pushNamed(context, '/search'),
             onCart: () {},
-            onLogin: () {},
+            onLogin: () => Navigator.pushNamed(context, '/login'),
           ),
 
           // Scrollable content

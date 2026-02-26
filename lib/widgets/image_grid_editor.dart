@@ -53,12 +53,130 @@ class _ImageGridEditorState extends State<ImageGridEditor> {
   }
 
   void _onAddTap() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('이미지 업로드는 준비 중입니다'),
-        duration: Duration(seconds: 2),
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '이미지 추가',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.link, color: AppColors.primary),
+              title: const Text('URL에서 가져오기'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showUrlDialog();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.image_outlined,
+                  color: AppColors.textSecondary),
+              title: const Text('기본 이미지 사용'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _addDefaultImage();
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
+  }
+
+  void _showUrlDialog() {
+    final urlCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text(
+          'URL로 이미지 추가',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: TextField(
+          controller: urlCtrl,
+          autofocus: true,
+          keyboardType: TextInputType.url,
+          decoration: InputDecoration(
+            hintText: 'https://example.com/image.jpg',
+            hintStyle:
+                const TextStyle(color: AppColors.textDisabled, fontSize: 13),
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12, vertical: 10),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.primary),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              '취소',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final url = urlCtrl.text.trim();
+              if (url.isNotEmpty) {
+                setState(() => _images.add(url));
+                widget.onChanged(List<String>.from(_images));
+              }
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('추가'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addDefaultImage() {
+    const placeholder = 'assets/images/placeholder.jpg';
+    setState(() => _images.add(placeholder));
+    widget.onChanged(List<String>.from(_images));
   }
 
   Widget _buildImage(String url) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:grit/theme/app_colors.dart';
 
 class ShareButtons extends StatelessWidget {
@@ -11,13 +12,16 @@ class ShareButtons extends StatelessWidget {
     required this.productName,
   });
 
-  void _showPlaceholder(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('공유 기능은 준비 중입니다'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+  void _copyLink(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: shareUrl)).then((_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('링크가 복사되었습니다!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    });
   }
 
   @override
@@ -30,7 +34,12 @@ class ShareButtons extends StatelessWidget {
           label: '카카오톡 공유',
           background: _KakaoBackground(),
           iconColor: const Color(0xFF3A1D1D),
-          onTap: () => _showPlaceholder(context),
+          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('카카오톡 공유는 앱에서 사용 가능합니다'),
+              duration: Duration(seconds: 2),
+            ),
+          ),
         ),
         const SizedBox(width: 24),
         _ShareButton(
@@ -38,7 +47,12 @@ class ShareButtons extends StatelessWidget {
           label: '인스타 스토리',
           background: _InstaBackground(),
           iconColor: AppColors.surface,
-          onTap: () => _showPlaceholder(context),
+          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('인스타그램 공유는 앱에서 사용 가능합니다'),
+              duration: Duration(seconds: 2),
+            ),
+          ),
         ),
         const SizedBox(width: 24),
         _ShareButton(
@@ -46,7 +60,7 @@ class ShareButtons extends StatelessWidget {
           label: '링크 복사',
           background: _SolidBackground(color: const Color(0xFFF0F0F0)),
           iconColor: AppColors.textSecondary,
-          onTap: () => _showPlaceholder(context),
+          onTap: () => _copyLink(context),
         ),
       ],
     );

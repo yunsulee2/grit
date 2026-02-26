@@ -40,15 +40,6 @@ class _MyPageScreenState extends State<MyPageScreen>
         _OrderItem(fund: mockFunds[5], badge: const StatusBadge.completed(text: '완료')),
       ];
 
-  void _showPlaceholder(BuildContext context, String label) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$label 기능은 준비 중입니다'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
   @override
   void initState() {
     super.initState();
@@ -110,7 +101,8 @@ class _MyPageScreenState extends State<MyPageScreen>
                   ),
                 ),
                 TextButton(
-                  onPressed: () => _showPlaceholder(context, '프로필 수정'),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, '/profile-edit'),
                   child: const Text(
                     '프로필 수정',
                     style: TextStyle(
@@ -206,18 +198,18 @@ class _OrderList extends StatelessWidget {
             children: [
               _MenuTile(
                 label: '배송지 관리',
-                onTap: () => _showMenuPlaceholder(context, '배송지 관리'),
+                onTap: () => Navigator.pushNamed(context, '/addresses'),
               ),
               const Divider(height: 1, indent: 16, endIndent: 16),
               _MenuTile(
                 label: '문의하기',
-                onTap: () => _showMenuPlaceholder(context, '문의하기'),
+                onTap: () => Navigator.pushNamed(context, '/inquiry'),
               ),
               const Divider(height: 1, indent: 16, endIndent: 16),
               _MenuTile(
                 label: '로그아웃',
                 labelColor: AppColors.accentRed,
-                onTap: () => _showMenuPlaceholder(context, '로그아웃'),
+                onTap: () => _showLogoutDialog(context),
               ),
             ],
           ),
@@ -226,11 +218,38 @@ class _OrderList extends StatelessWidget {
     );
   }
 
-  void _showMenuPlaceholder(BuildContext context, String label) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$label 기능은 준비 중입니다'),
-        duration: const Duration(seconds: 2),
+  void _showLogoutDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('로그아웃'),
+        content: const Text('로그아웃 하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text(
+              '취소',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('로그아웃되었습니다'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              Navigator.pushNamedAndRemoveUntil(
+                  context, '/', (route) => false);
+            },
+            child: const Text(
+              '로그아웃',
+              style: TextStyle(color: AppColors.accentRed),
+            ),
+          ),
+        ],
       ),
     );
   }
