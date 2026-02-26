@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
 
 class StepIndicator extends StatelessWidget {
   final int totalSteps;
@@ -51,14 +52,14 @@ class _StepCircle extends StatelessWidget {
       ),
       child: Center(
         child: _isCompleted
-            ? const Icon(Icons.check, size: 16, color: Colors.white)
+            ? const Icon(Icons.check, size: 16, color: AppColors.onPrimary)
             : Text(
                 '$step',
-                style: TextStyle(
-                  fontSize: 14,
+                style: AppTextStyles.bodyLarge.copyWith(
                   fontWeight: FontWeight.bold,
-                  color:
-                      _isCurrent ? Colors.white : AppColors.textSecondary,
+                  color: _isCurrent
+                      ? AppColors.onPrimary
+                      : AppColors.textSecondary,
                 ),
               ),
       ),

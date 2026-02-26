@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:grit/models/fund.dart';
-import 'package:grit/theme/app_colors.dart';
-import 'package:grit/utils/formatters.dart';
+import '../models/fund.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
+import '../utils/formatters.dart';
 
 class OptionBottomSheet extends StatefulWidget {
   final Fund fund;
@@ -58,9 +61,9 @@ class _OptionBottomSheetState extends State<OptionBottomSheet> {
     final fund = widget.fund;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -72,7 +75,7 @@ class _OptionBottomSheetState extends State<OptionBottomSheet> {
           // Handle bar
           Center(
             child: Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 8),
+              padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.sm),
               child: Container(
                 width: 40,
                 height: 4,
@@ -85,21 +88,23 @@ class _OptionBottomSheetState extends State<OptionBottomSheet> {
           ),
 
           // Title
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
             child: Text(
               '옵션 선택',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.secondary,
-              ),
+              style: AppTextStyles.titleMedium,
             ),
           ),
 
           // Option dropdown
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
             child: _OptionDropdown(
               options: _options,
               selectedIndex: _selectedOptionIndex,
@@ -109,14 +114,15 @@ class _OptionBottomSheetState extends State<OptionBottomSheet> {
 
           // Quantity selector
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
             child: Row(
               children: [
-                const Text(
+                Text(
                   '수량',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.secondary,
+                  style: AppTextStyles.bodyLarge.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -134,24 +140,21 @@ class _OptionBottomSheetState extends State<OptionBottomSheet> {
 
           // Delivery info
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '배송방법: 직접배송',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: AppTextStyles.bodyMedium,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   fund.freeShipping ? '배송비: 무료' : '배송비: 유료',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: AppTextStyles.bodyMedium,
                 ),
               ],
             ),
@@ -161,25 +164,24 @@ class _OptionBottomSheetState extends State<OptionBottomSheet> {
 
           // Price summary
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '공구 시작가 ${formatPrice(fund.startPrice)}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
+                  style: AppTextStyles.bodyMedium.copyWith(
                     decoration: TextDecoration.lineThrough,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   '공구 목표가 ${formatPrice(fund.targetPrice)}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.accentRed,
+                  style: AppTextStyles.priceCard.copyWith(
+                    color: AppColors.error,
                   ),
                 ),
               ],
@@ -188,25 +190,28 @@ class _OptionBottomSheetState extends State<OptionBottomSheet> {
 
           // CTA button
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.xs,
+              AppSpacing.lg,
+              AppSpacing.xxl,
+            ),
             child: SizedBox(
               height: 52,
               child: ElevatedButton(
                 onPressed: widget.onParticipate,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.surface,
+                  foregroundColor: AppColors.onPrimary,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadius.borderSm,
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   '공동구매 참여하기',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.surface,
+                  style: AppTextStyles.priceCard.copyWith(
+                    color: AppColors.onPrimary,
                   ),
                 ),
               ),
@@ -236,28 +241,25 @@ class _OptionDropdown extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.borderSm,
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int>(
           value: selectedIndex,
           isExpanded: true,
           icon: const Padding(
-            padding: EdgeInsets.only(right: 12),
+            padding: EdgeInsets.only(right: AppSpacing.md),
             child: Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          borderRadius: BorderRadius.circular(8),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          borderRadius: AppRadius.borderSm,
           items: [
             for (int i = 0; i < options.length; i++)
               DropdownMenuItem(
                 value: i,
                 child: Text(
                   options[i],
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.secondary,
-                  ),
+                  style: AppTextStyles.bodyLarge,
                 ),
               ),
           ],
@@ -298,11 +300,7 @@ class _QuantityStepper extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             '$quantity',
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.secondary,
-            ),
+            style: AppTextStyles.labelLarge,
           ),
         ),
         _StepperButton(
@@ -335,14 +333,14 @@ class _StepperButton extends StatelessWidget {
         height: 32,
         decoration: BoxDecoration(
           border: Border.all(
-            color: enabled ? AppColors.border : AppColors.textDisabled,
+            color: enabled ? AppColors.border : AppColors.textTertiary,
           ),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Icon(
           icon,
           size: 18,
-          color: enabled ? AppColors.secondary : AppColors.textDisabled,
+          color: enabled ? AppColors.textPrimary : AppColors.textTertiary,
         ),
       ),
     );

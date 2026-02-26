@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+
 class ImageCarousel extends StatefulWidget {
   const ImageCarousel({
     super.key,
@@ -54,7 +59,7 @@ class _ImageCarouselState extends State<ImageCarousel> {
           // Dot indicators — bottom center
           if (total > 1)
             Positioned(
-              bottom: 12,
+              bottom: AppSpacing.md,
               left: 0,
               right: 0,
               child: Row(
@@ -68,9 +73,9 @@ class _ImageCarouselState extends State<ImageCarousel> {
                     height: 6,
                     decoration: BoxDecoration(
                       color: isActive
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(3),
+                          ? AppColors.textInverse
+                          : AppColors.textInverse.withValues(alpha: 0.5),
+                      borderRadius: AppRadius.borderFull,
                     ),
                   );
                 }),
@@ -80,20 +85,19 @@ class _ImageCarouselState extends State<ImageCarousel> {
           // Counter badge — bottom right
           if (total > 1)
             Positioned(
-              bottom: 12,
-              right: 12,
+              bottom: AppSpacing.md,
+              right: AppSpacing.md,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: AppRadius.borderFull,
                 ),
                 child: Text(
                   '${_currentIndex + 1}/$total',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textInverse,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -103,8 +107,8 @@ class _ImageCarouselState extends State<ImageCarousel> {
           // Overlay badge slot — top left (e.g. countdown timer)
           if (widget.overlayBadge != null)
             Positioned(
-              top: 12,
-              left: 12,
+              top: AppSpacing.md,
+              left: AppSpacing.md,
               child: widget.overlayBadge!,
             ),
         ],
@@ -126,12 +130,12 @@ class _ImagePage extends StatelessWidget {
       width: double.infinity,
       height: double.infinity,
       errorBuilder: (context, error, _) => Container(
-        color: const Color(0xFFE5E5E5),
+        color: AppColors.border,
         child: const Center(
           child: Icon(
             Icons.image_not_supported_outlined,
             size: 40,
-            color: Color(0xFF8E8E93),
+            color: AppColors.textSecondary,
           ),
         ),
       ),

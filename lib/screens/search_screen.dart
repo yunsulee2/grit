@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
+import '../widgets/responsive_container.dart';
 import '../data/mock_data.dart';
 import '../models/fund.dart';
 
@@ -80,13 +84,15 @@ class _SearchScreenState extends State<SearchScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildSearchBar(context),
-            Expanded(
-              child: _hasQuery ? _buildResults() : _buildPopularKeywords(),
-            ),
-          ],
+        child: ResponsiveContainer.content(
+          child: Column(
+            children: [
+              _buildSearchBar(context),
+              Expanded(
+                child: _hasQuery ? _buildResults() : _buildPopularKeywords(),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -95,7 +101,10 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildSearchBar(BuildContext context) {
     return Container(
       color: AppColors.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 10,
+      ),
       child: Row(
         children: [
           // Back button
@@ -109,7 +118,7 @@ class _SearchScreenState extends State<SearchScreen> {
               height: 44,
               decoration: BoxDecoration(
                 color: AppColors.background,
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: AppRadius.borderFull,
                 border: Border.all(color: AppColors.border, width: 1),
               ),
               child: TextField(
@@ -117,15 +126,13 @@ class _SearchScreenState extends State<SearchScreen> {
                 focusNode: _focusNode,
                 onChanged: _onQueryChanged,
                 textInputAction: TextInputAction.search,
-                style: const TextStyle(
-                  fontSize: 15,
+                style: AppTextStyles.bodyLarge.copyWith(
                   color: AppColors.textPrimary,
                 ),
                 decoration: InputDecoration(
                   hintText: '상품명, 브랜드 검색',
-                  hintStyle: const TextStyle(
-                    fontSize: 15,
-                    color: AppColors.textDisabled,
+                  hintStyle: AppTextStyles.bodyLarge.copyWith(
+                    color: AppColors.textTertiary,
                   ),
                   prefixIcon: const Icon(
                     Icons.search,
@@ -147,12 +154,14 @@ class _SearchScreenState extends State<SearchScreen> {
                         )
                       : null,
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: AppSpacing.md,
+                  ),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: AppSpacing.xs),
         ],
       ),
     );
@@ -160,22 +169,20 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildPopularKeywords() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '인기 검색어',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+            style: AppTextStyles.titleMedium.copyWith(
               color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 14),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
             children: _popularKeywords.asMap().entries.map((entry) {
               final index = entry.key;
               final keyword = entry.value;
@@ -197,12 +204,12 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       itemCount: _results.length,
       separatorBuilder: (context, index) => const Divider(
         height: 1,
-        indent: 20,
-        endIndent: 20,
+        indent: AppSpacing.xl,
+        endIndent: AppSpacing.xl,
         color: AppColors.border,
       ),
       itemBuilder: (context, index) {
@@ -224,23 +231,20 @@ class _SearchScreenState extends State<SearchScreen> {
           const Icon(
             Icons.search_off_rounded,
             size: 64,
-            color: AppColors.textDisabled,
+            color: AppColors.textTertiary,
           ),
-          const SizedBox(height: 16),
-          const Text(
+          const SizedBox(height: AppSpacing.lg),
+          Text(
             '검색 결과가 없습니다',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+            style: AppTextStyles.titleMedium.copyWith(
               color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             '"${_controller.text.trim()}"에 대한 결과가 없어요',
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textDisabled,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textTertiary,
             ),
           ),
         ],
@@ -270,7 +274,7 @@ class _KeywordChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: AppRadius.borderFull,
           border: Border.all(color: AppColors.border, width: 1),
         ),
         child: Row(
@@ -278,17 +282,15 @@ class _KeywordChip extends StatelessWidget {
           children: [
             Text(
               '$rank',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
+              style: AppTextStyles.labelMedium.copyWith(
                 color: AppColors.primary,
+                fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 14,
+              style: AppTextStyles.bodyLarge.copyWith(
                 color: AppColors.textPrimary,
               ),
             ),
@@ -317,12 +319,15 @@ class _SearchResultTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.md,
+        ),
         child: Row(
           children: [
             // Thumbnail
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.borderSm,
               child: SizedBox(
                 width: 64,
                 height: 64,
@@ -335,14 +340,14 @@ class _SearchResultTile extends StatelessWidget {
                       child: Icon(
                         Icons.fastfood,
                         size: 28,
-                        color: AppColors.textDisabled,
+                        color: AppColors.textTertiary,
                       ),
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             // Info
             Expanded(
               child: Column(
@@ -350,8 +355,7 @@ class _SearchResultTile extends StatelessWidget {
                 children: [
                   Text(
                     fund.brandName,
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -360,8 +364,7 @@ class _SearchResultTile extends StatelessWidget {
                     fund.productName,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: AppTextStyles.bodyLarge.copyWith(
                       fontWeight: FontWeight.w500,
                       color: AppColors.textPrimary,
                       height: 1.4,
@@ -374,17 +377,15 @@ class _SearchResultTile extends StatelessWidget {
                     children: [
                       Text(
                         '${fund.discountPercent}%',
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: AppTextStyles.bodyMedium.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.accentRed,
+                          color: AppColors.error,
                         ),
                       ),
                       const SizedBox(width: 5),
                       Text(
                         formatPrice(fund.targetPrice),
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: AppTextStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
                         ),
@@ -392,11 +393,10 @@ class _SearchResultTile extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         formatPrice(fund.startPrice),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textDisabled,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textTertiary,
                           decoration: TextDecoration.lineThrough,
-                          decorationColor: AppColors.textDisabled,
+                          decorationColor: AppColors.textTertiary,
                         ),
                       ),
                     ],
@@ -406,7 +406,7 @@ class _SearchResultTile extends StatelessWidget {
             ),
             const Icon(
               Icons.chevron_right,
-              color: AppColors.textDisabled,
+              color: AppColors.textTertiary,
               size: 20,
             ),
           ],

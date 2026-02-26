@@ -37,13 +37,13 @@ class ExtractionStatusIcon extends StatelessWidget {
   Color get _color {
     switch (confidence) {
       case ExtractionConfidence.high:
-        return AppColors.successGreen;
+        return AppColors.success;
       case ExtractionConfidence.medium:
-        return const Color(0xFFF57C00);
+        return AppColors.warning;
       case ExtractionConfidence.low:
         return AppColors.textSecondary;
       case ExtractionConfidence.failed:
-        return AppColors.accentRed;
+        return AppColors.error;
     }
   }
 }

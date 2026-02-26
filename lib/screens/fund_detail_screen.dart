@@ -5,6 +5,10 @@ import 'package:flutter/services.dart';
 import '../data/mock_data.dart';
 import '../models/fund.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_breakpoints.dart';
 import '../utils/formatters.dart';
 import '../widgets/option_bottom_sheet.dart';
 import '../widgets/share_buttons.dart';
@@ -60,8 +64,7 @@ class _FundDetailScreenState extends State<FundDetailScreen> {
   }
 
   void _onParticipate(Fund fund) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    if (screenWidth <= 960) {
+    if (!AppBreakpoints.isDesktop(context)) {
       OptionBottomSheet.show(
         context,
         fund: fund,
@@ -88,14 +91,13 @@ class _FundDetailScreenState extends State<FundDetailScreen> {
         body: const Center(
           child: Text(
             '상품을 찾을 수 없습니다.',
-            style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+            style: AppTextStyles.bodyLarge,
           ),
         ),
       );
     }
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth > 960;
+    final isDesktop = AppBreakpoints.isDesktop(context);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -121,9 +123,9 @@ class _FundDetailScreenState extends State<FundDetailScreen> {
               child: Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1280),
+                  constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxPageWidth),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
                     child: isDesktop
                         ? _buildDesktopLayout(fund)
                         : _buildMobileLayout(fund),
@@ -148,7 +150,7 @@ class _FundDetailScreenState extends State<FundDetailScreen> {
 
   Widget _buildDesktopLayout(Fund fund) {
     return Padding(
-      padding: const EdgeInsets.only(top: 24, bottom: 40),
+      padding: const EdgeInsets.only(top: AppSpacing.xxl, bottom: 40),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -161,13 +163,13 @@ class _FundDetailScreenState extends State<FundDetailScreen> {
               formatCountdown: _formatCountdown,
             ),
           ),
-          const SizedBox(width: 32),
+          const SizedBox(width: AppSpacing.xxxl),
 
           // CENTER: Product info + pricing
           Expanded(
             child: _ProductInfoCenter(fund: fund),
           ),
-          const SizedBox(width: 32),
+          const SizedBox(width: AppSpacing.xxxl),
 
           // RIGHT: Option sidebar
           SizedBox(
@@ -193,23 +195,23 @@ class _FundDetailScreenState extends State<FundDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
         // Product image (constrained, not full-bleed)
         _ProductImageSection(
           fund: fund,
           remaining: _remaining,
           formatCountdown: _formatCountdown,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
         // Product info
         _ProductInfoCenter(fund: fund),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         // Volume pricing detail
         _VolumePricingCard(fund: fund),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         // Fund info
         _FundInfoCard(fund: fund),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         // Product detail
         _ProductDetailCard(fund: fund),
         const SizedBox(height: 80), // space for bottom CTA
@@ -240,10 +242,11 @@ class _BrandTopBar extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       builder: (ctx) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.xxl, horizontal: AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -251,15 +254,11 @@ class _BrandTopBar extends StatelessWidget {
               productName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
+              style: AppTextStyles.titleSmall,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.xl),
             ShareButtons(shareUrl: shareUrl, productName: productName),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
           ],
         ),
       ),
@@ -283,17 +282,14 @@ class _BrandTopBar extends StatelessWidget {
                 children: [
                   Text(
                     brandName,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.secondary,
+                    style: AppTextStyles.titleMedium.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 1),
-                  const Text(
+                  Text(
                     '스토어정보 >',
-                    style: TextStyle(
-                      fontSize: 11,
+                    style: AppTextStyles.caption.copyWith(
                       color: AppColors.textSecondary,
                       decoration: TextDecoration.underline,
                       decorationColor: AppColors.textSecondary,
@@ -303,19 +299,19 @@ class _BrandTopBar extends StatelessWidget {
               ),
               // Left: back button
               Positioned(
-                left: 4,
+                left: AppSpacing.xs,
                 child: IconButton(
                   onPressed: onBack,
                   icon: const Icon(
                     Icons.arrow_back_ios_new,
                     size: 20,
-                    color: AppColors.secondary,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
               // Right: share + cart
               Positioned(
-                right: 4,
+                right: AppSpacing.xs,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -324,7 +320,7 @@ class _BrandTopBar extends StatelessWidget {
                       icon: const Icon(
                         Icons.share_outlined,
                         size: 20,
-                        color: AppColors.secondary,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     IconButton(
@@ -332,7 +328,7 @@ class _BrandTopBar extends StatelessWidget {
                       icon: const Icon(
                         Icons.shopping_cart_outlined,
                         size: 20,
-                        color: AppColors.secondary,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ],
@@ -367,19 +363,18 @@ class _StoreNavTabs extends StatelessWidget {
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
         child: Row(
           children: [
             for (int i = 0; i < _tabs.length; i++) ...[
-              if (i > 0) const SizedBox(width: 24),
+              if (i > 0) const SizedBox(width: AppSpacing.xxl),
               Center(
                 child: Text(
                   _tabs[i],
-                  style: TextStyle(
-                    fontSize: 13,
+                  style: AppTextStyles.bodyMedium.copyWith(
                     fontWeight: i == 0 ? FontWeight.bold : FontWeight.normal,
                     color: i == 0
-                        ? AppColors.secondary
+                        ? AppColors.textPrimary
                         : AppColors.textSecondary,
                   ),
                 ),
@@ -406,29 +401,32 @@ class _Breadcrumb extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.background,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xl, vertical: AppSpacing.sm),
       child: Align(
         alignment: Alignment.centerLeft,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1280),
+          constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxPageWidth),
           child: Row(
             children: [
-              const Text(
+              Text(
                 '홈',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
               const _BreadcrumbArrow(),
               Text(
                 category,
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary),
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
               const _BreadcrumbArrow(),
               Flexible(
                 child: Text(
                   productName,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w500,
                   ),
@@ -450,11 +448,11 @@ class _BreadcrumbArrow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 6),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm - 2),
       child: Icon(
         Icons.chevron_right,
         size: 14,
-        color: AppColors.textDisabled,
+        color: AppColors.textTertiary,
       ),
     );
   }
@@ -483,7 +481,7 @@ class _ProductImageSection extends StatelessWidget {
         AspectRatio(
           aspectRatio: 1,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.borderSm,
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -491,7 +489,7 @@ class _ProductImageSection extends StatelessWidget {
                   fund.imageUrl,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, _) => Container(
-                    color: const Color(0xFFE5E5E5),
+                    color: AppColors.border,
                     child: const Center(
                       child: Icon(
                         Icons.image_not_supported_outlined,
@@ -512,7 +510,7 @@ class _ProductImageSection extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: const Color(0xCC000000),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: AppRadius.borderXs,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -520,14 +518,13 @@ class _ProductImageSection extends StatelessWidget {
                         const Icon(
                           Icons.access_time,
                           size: 14,
-                          color: Colors.white,
+                          color: AppColors.textInverse,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: AppSpacing.xs),
                         Text(
                           '종료까지 ${formatCountdown(remaining)}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textInverse,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -578,7 +575,7 @@ class _ThumbnailStripState extends State<_ThumbnailStrip> {
         child: Row(
           children: [
             for (int i = 0; i < images.length; i++) ...[
-              if (i > 0) const SizedBox(width: 8),
+              if (i > 0) const SizedBox(width: AppSpacing.sm),
               GestureDetector(
                 onTap: () => setState(() => _selectedIndex = i),
                 child: _Thumbnail(
@@ -618,7 +615,7 @@ class _Thumbnail extends StatelessWidget {
           imageUrl,
           fit: BoxFit.cover,
           errorBuilder: (context, error, _) => Container(
-            color: const Color(0xFFE5E5E5),
+            color: AppColors.border,
             child: const Icon(Icons.image, size: 20, color: AppColors.textSecondary),
           ),
         ),
@@ -641,42 +638,37 @@ class _ProductInfoCenter extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
         border: Border.all(color: AppColors.border),
       ),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Brand name
           Text(
             fund.brandName,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
+            style: AppTextStyles.bodyMedium,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.sm - 2),
 
           // Product name
           Text(
             fund.productName,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.secondary,
+            style: AppTextStyles.titleLarge.copyWith(
+              color: AppColors.textPrimary,
               height: 1.3,
             ),
           ),
-          const SizedBox(height: 4),
-          const Text(
+          const SizedBox(height: AppSpacing.xs),
+          Text(
             '원산지: 국내산',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: AppTextStyles.bodySmall,
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           const Divider(height: 1, color: AppColors.border),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // Price section
           Row(
@@ -684,18 +676,16 @@ class _ProductInfoCenter extends StatelessWidget {
             children: [
               // Discount badge
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.accentRed,
-                  borderRadius: BorderRadius.circular(4),
+                  color: AppColors.error,
+                  borderRadius: AppRadius.borderXs,
                 ),
                 child: Text(
                   '${fund.discountPercent}%',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                  style: AppTextStyles.priceCard.copyWith(
+                    color: AppColors.textInverse,
                   ),
                 ),
               ),
@@ -703,98 +693,91 @@ class _ProductInfoCenter extends StatelessWidget {
               // Target price (big)
               Text(
                 formatPrice(fund.targetPrice),
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.secondary,
+                style: AppTextStyles.priceHero.copyWith(
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.sm - 2),
           // Original price strikethrough
           Text(
             formatPrice(fund.startPrice),
-            style: const TextStyle(
-              fontSize: 14,
+            style: AppTextStyles.priceStrike.copyWith(
               color: AppColors.textSecondary,
-              decoration: TextDecoration.lineThrough,
               decorationColor: AppColors.textSecondary,
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           const Divider(height: 1, color: AppColors.border),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // Volume pricing progress
-          const Text(
+          Text(
             '공동구매 진행률',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: AppColors.secondary,
+            style: AppTextStyles.titleSmall.copyWith(
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           VolumePricingBar(
             tiers: fund.tiers,
             currentParticipants: fund.currentParticipants,
             maxParticipants: fund.maxParticipants,
             isLarge: true,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           PriceTierLabel(
             tiers: fund.tiers,
             currentParticipants: fund.currentParticipants,
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           const Divider(height: 1, color: AppColors.border),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
 
           // Discount breakdown rows
           _InfoDetailRow(
             label: '공동 할인 (수량 비례)',
             value: '-${formatPrice(fund.startPrice - fund.targetPrice)}',
-            valueColor: AppColors.accentRed,
+            valueColor: AppColors.error,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           const _InfoDetailRow(
             label: '첫 구매 적립',
             value: '+ 500P',
-            valueColor: AppColors.successGreen,
+            valueColor: AppColors.success,
           ),
           if (fund.freeShipping) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             const _InfoDetailRow(
               label: '배송비',
               value: '무료',
-              valueColor: AppColors.successGreen,
+              valueColor: AppColors.success,
             ),
           ],
 
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // Share promotion banner
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFEBF5FB),
-              borderRadius: BorderRadius.circular(8),
+              color: AppColors.infoMuted,
+              borderRadius: AppRadius.borderSm,
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: 10),
             child: Row(
               children: [
                 const Icon(Icons.group_outlined,
-                    size: 18, color: Color(0xFF2980B9)),
-                const SizedBox(width: 8),
-                const Expanded(
+                    size: 18, color: AppColors.info),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
                   child: Text(
                     '친구에게 공유하면 함께 더 싸게!',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF2980B9),
-                      fontWeight: FontWeight.w600,
+                    style: AppTextStyles.labelMedium.copyWith(
+                      color: AppColors.info,
                     ),
                   ),
                 ),
@@ -813,17 +796,16 @@ class _ProductInfoCenter extends StatelessWidget {
                     });
                   },
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md, vertical: AppSpacing.sm - 2),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2980B9),
+                      color: AppColors.info,
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Text(
+                    child: Text(
                       '공유하기',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textInverse,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -856,13 +838,11 @@ class _InfoDetailRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style:
-              const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          style: AppTextStyles.bodyMedium,
         ),
         Text(
           value,
-          style: TextStyle(
-            fontSize: 13,
+          style: AppTextStyles.bodyMedium.copyWith(
             fontWeight: FontWeight.w600,
             color: valueColor,
           ),
@@ -898,40 +878,38 @@ class _OptionSidebar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
         border: Border.all(color: AppColors.border),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
           // Title
-          const Text(
+          Text(
             '옵션 선택',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: AppColors.secondary,
+            style: AppTextStyles.titleSmall.copyWith(
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
 
           // Option dropdown
           Container(
             decoration: BoxDecoration(
               border: Border.all(color: AppColors.border),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.borderSm,
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: 10),
             child: Row(
               children: [
                 Expanded(
                   child: Text(
                     fund.productName,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.secondary,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -942,17 +920,16 @@ class _OptionSidebar extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // Quantity row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 '수량',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.secondary,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.textPrimary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -969,10 +946,8 @@ class _OptionSidebar extends StatelessWidget {
                     child: Text(
                       '$quantity',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.secondary,
+                      style: AppTextStyles.titleSmall.copyWith(
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -986,60 +961,54 @@ class _OptionSidebar extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           const Divider(height: 1, color: AppColors.border),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
 
           // Delivery info
-          const Text(
+          Text(
             '배송방법: 직접배송',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: AppTextStyles.bodySmall,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             fund.freeShipping ? '배송비: 무료' : '배송비: 유료',
-            style:
-                const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: AppTextStyles.bodySmall,
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           const Divider(height: 1, color: AppColors.border),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
 
           // Price summary
           Text(
             formatPrice(fund.startPrice),
-            style: const TextStyle(
-              fontSize: 13,
+            style: AppTextStyles.priceStrike.copyWith(
               color: AppColors.textSecondary,
-              decoration: TextDecoration.lineThrough,
               decorationColor: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 '총 주문금액',
-                style: TextStyle(
-                  fontSize: 14,
+                style: AppTextStyles.bodyLarge.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.secondary,
+                  color: AppColors.textPrimary,
                 ),
               ),
               Text(
                 formatPrice(totalPrice),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.accentRed,
+                style: AppTextStyles.titleLarge.copyWith(
+                  color: AppColors.error,
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // CTA button — Orange like 톡딜
           SizedBox(
@@ -1048,18 +1017,16 @@ class _OptionSidebar extends StatelessWidget {
               onPressed: onParticipate,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.textInverse,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppRadius.borderSm,
                 ),
               ),
-              child: const Text(
+              child: Text(
                 '공동구매 참여하기',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                style: AppTextStyles.labelLarge.copyWith(
+                  color: AppColors.textInverse,
                 ),
               ),
             ),
@@ -1090,14 +1057,14 @@ class _SidebarStepperBtn extends StatelessWidget {
         height: 30,
         decoration: BoxDecoration(
           border: Border.all(
-            color: enabled ? AppColors.border : AppColors.textDisabled,
+            color: enabled ? AppColors.border : AppColors.textTertiary,
           ),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Icon(
           icon,
           size: 16,
-          color: enabled ? AppColors.secondary : AppColors.textDisabled,
+          color: enabled ? AppColors.textPrimary : AppColors.textTertiary,
         ),
       ),
     );
@@ -1132,7 +1099,7 @@ class _MobileCtaBar extends StatelessWidget {
         child: SizedBox(
           height: 72,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Row(
               children: [
                 // Price display
@@ -1143,19 +1110,15 @@ class _MobileCtaBar extends StatelessWidget {
                     children: [
                       Text(
                         formatPrice(fund.startPrice),
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: AppTextStyles.priceStrike.copyWith(
                           color: AppColors.textSecondary,
-                          decoration: TextDecoration.lineThrough,
                           decorationColor: AppColors.textSecondary,
                         ),
                       ),
                       Text(
                         formatPrice(fund.targetPrice),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.accentRed,
+                        style: AppTextStyles.priceCard.copyWith(
+                          color: AppColors.error,
                         ),
                       ),
                     ],
@@ -1169,18 +1132,16 @@ class _MobileCtaBar extends StatelessWidget {
                     onPressed: onParticipate,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.textInverse,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppRadius.borderSm,
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       '공동구매 참여하기',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: AppColors.textInverse,
                       ),
                     ),
                   ),
@@ -1210,68 +1171,63 @@ class _VolumePricingCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
         border: Border.all(color: AppColors.border),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               const Icon(Icons.local_offer_outlined,
-                  size: 16, color: AppColors.accentRed),
-              const SizedBox(width: 6),
-              const Text(
+                  size: 16, color: AppColors.error),
+              const SizedBox(width: AppSpacing.sm - 2),
+              Text(
                 '할인 & 적립',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.secondary,
+                style: AppTextStyles.titleSmall.copyWith(
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           _InfoDetailRow(
             label: '공동 할인',
             value: '-${formatPrice(discountAmount)}',
-            valueColor: AppColors.accentRed,
+            valueColor: AppColors.error,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.sm - 2),
           const _InfoDetailRow(
             label: '첫 구매 적립',
             value: '+ 500P',
-            valueColor: AppColors.successGreen,
+            valueColor: AppColors.success,
           ),
           if (fund.freeShipping) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.sm - 2),
             const _InfoDetailRow(
               label: '배송비',
               value: '무료',
-              valueColor: AppColors.successGreen,
+              valueColor: AppColors.success,
             ),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           const Divider(height: 1, color: AppColors.border),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 '총 주문금액',
-                style: TextStyle(
-                  fontSize: 14,
+                style: AppTextStyles.bodyLarge.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.secondary,
+                  color: AppColors.textPrimary,
                 ),
               ),
               Text(
                 formatPrice(fund.targetPrice),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.accentRed,
+                style: AppTextStyles.priceCard.copyWith(
+                  color: AppColors.error,
                 ),
               ),
             ],
@@ -1302,10 +1258,10 @@ class _FundInfoCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
         border: Border.all(color: AppColors.border),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1313,13 +1269,11 @@ class _FundInfoCard extends StatelessWidget {
             children: [
               const Icon(Icons.info_outline,
                   size: 16, color: AppColors.primary),
-              const SizedBox(width: 6),
-              const Text(
+              const SizedBox(width: AppSpacing.sm - 2),
+              Text(
                 '공구 안내',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.secondary,
+                style: AppTextStyles.titleSmall.copyWith(
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
@@ -1329,22 +1283,22 @@ class _FundInfoCard extends StatelessWidget {
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF3E0),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFFFCC80)),
+              color: AppColors.warningMuted,
+              borderRadius: AppRadius.borderSm,
+              border: Border.all(color: AppColors.warning.withValues(alpha: 0.5)),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: 10),
             child: Row(
               children: [
                 const Icon(Icons.access_time,
-                    size: 15, color: Color(0xFFF57C00)),
-                const SizedBox(width: 6),
+                    size: 15, color: AppColors.warning),
+                const SizedBox(width: AppSpacing.sm - 2),
                 Expanded(
                   child: Text(
                     '$startShort ~ $endShort 까지 한정판매!',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFFF57C00),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.warning,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1352,7 +1306,7 @@ class _FundInfoCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           _FundInfoRow(label: '혜택', content: '첫 구매 적립 500P'),
           const Divider(height: 1, color: AppColors.border),
           _FundInfoRow(label: '상품정보', content: '1인 최대 5개 구매 가능'),
@@ -1386,8 +1340,7 @@ class _FundInfoRow extends StatelessWidget {
             width: 68,
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 13,
+              style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
@@ -1397,9 +1350,8 @@ class _FundInfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               content,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.secondary,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textPrimary,
               ),
             ),
           ),
@@ -1429,49 +1381,45 @@ class _ProductDetailCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
         border: Border.all(color: AppColors.border),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '상품 상세',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: AppColors.secondary,
+            style: AppTextStyles.titleSmall.copyWith(
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Text(
             description,
-            style: const TextStyle(
-              fontSize: 14,
+            style: AppTextStyles.bodyLarge.copyWith(
               color: AppColors.textPrimary,
               height: 1.6,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           // Placeholder detail image
           Container(
             height: 240,
             decoration: BoxDecoration(
-              color: const Color(0xFFE5E5E5),
-              borderRadius: BorderRadius.circular(8),
+              color: AppColors.border,
+              borderRadius: AppRadius.borderSm,
             ),
             alignment: Alignment.center,
-            child: const Column(
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.image_outlined,
+                const Icon(Icons.image_outlined,
                     size: 44, color: AppColors.textSecondary),
-                SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   '상품 상세 이미지 영역',
-                  style:
-                      TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  style: AppTextStyles.bodyMedium,
                 ),
               ],
             ),

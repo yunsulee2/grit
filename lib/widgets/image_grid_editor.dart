@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
 import '../services/scrape_service.dart';
 
 class ImageGridEditor extends StatefulWidget {
@@ -57,32 +60,28 @@ class _ImageGridEditorState extends State<ImageGridEditor> {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Container(
               width: 36,
               height: 4,
               decoration: BoxDecoration(
                 color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: AppRadius.borderFull,
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
+            const SizedBox(height: AppSpacing.lg),
+            Text(
               '이미지 추가',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+              style: AppTextStyles.titleMedium,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             ListTile(
               leading: const Icon(Icons.link, color: AppColors.primary),
               title: const Text('URL에서 가져오기'),
@@ -112,15 +111,10 @@ class _ImageGridEditorState extends State<ImageGridEditor> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
+        title: Text(
           'URL로 이미지 추가',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
+          style: AppTextStyles.titleMedium,
         ),
         content: TextField(
           controller: urlCtrl,
@@ -128,16 +122,17 @@ class _ImageGridEditorState extends State<ImageGridEditor> {
           keyboardType: TextInputType.url,
           decoration: InputDecoration(
             hintText: 'https://example.com/image.jpg',
-            hintStyle:
-                const TextStyle(color: AppColors.textDisabled, fontSize: 13),
+            hintStyle: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textTertiary,
+            ),
             contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12, vertical: 10),
+                horizontal: AppSpacing.md, vertical: 10),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.borderSm,
               borderSide: const BorderSide(color: AppColors.border),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.borderSm,
               borderSide: const BorderSide(color: AppColors.primary),
             ),
           ),
@@ -161,10 +156,10 @@ class _ImageGridEditorState extends State<ImageGridEditor> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.onPrimary,
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.borderSm,
               ),
             ),
             child: const Text('추가'),
@@ -201,7 +196,7 @@ class _ImageGridEditorState extends State<ImageGridEditor> {
     return Container(
       color: AppColors.border,
       child: const Center(
-        child: Icon(Icons.broken_image_outlined, color: AppColors.textDisabled, size: 32),
+        child: Icon(Icons.broken_image_outlined, color: AppColors.textTertiary, size: 32),
       ),
     );
   }
@@ -220,11 +215,7 @@ class _ImageGridEditorState extends State<ImageGridEditor> {
           padding: const EdgeInsets.only(bottom: 12),
           child: Text(
             '${widget.title} (${_images.length}/${widget.maxImages}장)',
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+            style: AppTextStyles.titleSmall,
           ),
         ),
         // Grid using Wrap for reordering via long-press drag
@@ -300,13 +291,13 @@ class _ReorderableImageGridState extends State<_ReorderableImageGrid> {
                 onTap: widget.onAdd,
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadius.borderSm,
                     color: AppColors.background,
                   ),
                   child: CustomPaint(
                     painter: _DashedBorderPainter(),
                     child: const Center(
-                      child: Icon(Icons.add, color: AppColors.textDisabled, size: 32),
+                      child: Icon(Icons.add, color: AppColors.textTertiary, size: 32),
                     ),
                   ),
                 ),
@@ -354,7 +345,7 @@ class _ReorderableImageGridState extends State<_ReorderableImageGrid> {
           child: Container(
             decoration: BoxDecoration(
               color: AppColors.border,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.borderSm,
             ),
           ),
         ),
@@ -374,7 +365,7 @@ class _ReorderableImageGridState extends State<_ReorderableImageGrid> {
             duration: const Duration(milliseconds: 150),
             width: cellWidth,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.borderSm,
               border: isHover
                   ? Border.all(color: AppColors.primary, width: 2)
                   : null,
@@ -393,7 +384,7 @@ class _ReorderableImageGridState extends State<_ReorderableImageGrid> {
     return Stack(
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppRadius.borderSm,
           child: AspectRatio(
             aspectRatio: 1,
             child: widget.buildImage(widget.images[index]),
@@ -409,10 +400,10 @@ class _ReorderableImageGridState extends State<_ReorderableImageGrid> {
                 width: 20,
                 height: 20,
                 decoration: const BoxDecoration(
-                  color: AppColors.accentRed,
+                  color: AppColors.error,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.close, size: 12, color: Colors.white),
+                child: const Icon(Icons.close, size: 12, color: AppColors.onPrimary),
               ),
             ),
           ),
@@ -430,7 +421,7 @@ class _DashedBorderPainter extends CustomPainter {
     const dashSpace = 4.0;
     const radius = 8.0;
     final paint = Paint()
-      ..color = AppColors.textDisabled
+      ..color = AppColors.textTertiary
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 

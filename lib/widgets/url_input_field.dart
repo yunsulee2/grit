@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
 import '../services/site_detector.dart';
 
 class UrlInputField extends StatefulWidget {
@@ -45,7 +48,7 @@ class _UrlInputFieldState extends State<UrlInputField> {
   }
 
   Color get _borderColor {
-    if (_showValidationError && !_isValidUrl) return AppColors.accentRed;
+    if (_showValidationError && !_isValidUrl) return AppColors.error;
     if (_focusNode.hasFocus) return AppColors.primary;
     return AppColors.border;
   }
@@ -74,12 +77,12 @@ class _UrlInputFieldState extends State<UrlInputField> {
               height: 48,
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.borderSm,
                 border: Border.all(color: _borderColor),
               ),
               child: Row(
                 children: [
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Icon(
                     Icons.link,
                     size: 20,
@@ -87,21 +90,19 @@ class _UrlInputFieldState extends State<UrlInputField> {
                         ? AppColors.primary
                         : AppColors.textSecondary,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: TextField(
                       controller: _controller,
                       focusNode: _focusNode,
                       onChanged: _onUrlChanged,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: AppTextStyles.bodyLarge.copyWith(
                         color: AppColors.textPrimary,
                       ),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'https://www.coupang.com/vp/products/...',
-                        hintStyle: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textDisabled,
+                        hintStyle: AppTextStyles.bodyLarge.copyWith(
+                          color: AppColors.textTertiary,
                         ),
                         border: InputBorder.none,
                         isDense: true,
@@ -115,7 +116,7 @@ class _UrlInputFieldState extends State<UrlInputField> {
                   // Site badge
                   if (_detectedSite != null && _url.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.only(right: AppSpacing.sm),
                       child: _SiteBadge(site: _detectedSite!),
                     ),
                 ],
@@ -126,23 +127,21 @@ class _UrlInputFieldState extends State<UrlInputField> {
 
         // Validation error
         if (_showValidationError && !_isValidUrl) ...[
-          const SizedBox(height: 4),
-          const Text(
+          const SizedBox(height: AppSpacing.xs),
+          Text(
             'URL 형식이 올바르지 않습니다',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.accentRed,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.error,
             ),
           ),
         ],
 
         // Non-P0 site warning
         if (warning != null) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             warning,
-            style: const TextStyle(
-              fontSize: 12,
+            style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.primary,
             ),
           ),
@@ -151,15 +150,14 @@ class _UrlInputFieldState extends State<UrlInputField> {
         const SizedBox(height: 6),
 
         // Supported sites hint
-        const Text(
+        Text(
           '쿠팡, 네이버 스마트스토어, 카카오 톡딜 URL을 지원합니다',
-          style: TextStyle(
-            fontSize: 12,
+          style: AppTextStyles.bodySmall.copyWith(
             color: AppColors.textSecondary,
           ),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
 
         // Ownership checkbox
         GestureDetector(
@@ -178,18 +176,17 @@ class _UrlInputFieldState extends State<UrlInputField> {
                   activeColor: AppColors.primary,
                   side: const BorderSide(color: AppColors.border, width: 1.5),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: AppRadius.borderXs,
                   ),
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   visualDensity: VisualDensity.compact,
                 ),
               ),
-              const SizedBox(width: 8),
-              const Expanded(
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
                 child: Text(
                   '해당 URL의 상품은 본인이 판매 권한을 가진 상품입니다',
-                  style: TextStyle(
-                    fontSize: 13,
+                  style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textPrimary,
                     height: 1.4,
                   ),
@@ -199,29 +196,28 @@ class _UrlInputFieldState extends State<UrlInputField> {
           ),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
 
         // Submit button
         SizedBox(
           width: double.infinity,
-          height: 48,
+          height: AppSpacing.xxxxl,
           child: ElevatedButton(
             onPressed: _canSubmit ? _onSubmit : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              disabledBackgroundColor: AppColors.textDisabled,
+              disabledBackgroundColor: AppColors.textTertiary,
               foregroundColor: AppColors.surface,
               disabledForegroundColor: AppColors.surface,
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.borderSm,
               ),
             ),
-            child: const Text(
+            child: Text(
               '가져오기',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+              style: AppTextStyles.labelLarge.copyWith(
+                color: AppColors.onPrimary,
               ),
             ),
           ),
@@ -250,22 +246,21 @@ class _SiteBadge extends StatelessWidget {
 
   Color get _textColor {
     return site == SupportedSite.kakao
-        ? AppColors.secondary
+        ? AppColors.textPrimary
         : AppColors.surface;
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
       decoration: BoxDecoration(
         color: _badgeColor,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadius.borderXs,
       ),
       child: Text(
         SiteDetector.displayName(site),
-        style: TextStyle(
-          fontSize: 11,
+        style: AppTextStyles.labelSmall.copyWith(
           fontWeight: FontWeight.w600,
           color: _textColor,
         ),

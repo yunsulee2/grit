@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
 import '../data/mock_data.dart';
 import '../models/fund.dart';
 import '../widgets/status_badge.dart';
 import '../utils/formatters.dart';
+import '../widgets/responsive_container.dart';
 
 class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
@@ -28,7 +32,7 @@ class _MyPageScreenState extends State<MyPageScreen>
           badge: const StatusBadge(
             text: '배송중',
             type: BadgeType.custom,
-            customBgColor: Color(0xFF007AFF),
+            customBgColor: AppColors.info,
             customTextColor: AppColors.surface,
           ),
         ),
@@ -59,98 +63,92 @@ class _MyPageScreenState extends State<MyPageScreen>
       appBar: AppBar(
         title: const Text('마이페이지'),
       ),
-      body: Column(
-        children: [
-          // Profile section
-          Container(
-            color: AppColors.surface,
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                const CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppColors.background,
-                  child: Icon(
-                    Icons.person,
-                    color: AppColors.textSecondary,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '김운동',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'workout@gmail.com',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                TextButton(
-                  onPressed: () =>
-                      Navigator.pushNamed(context, '/profile-edit'),
-                  child: const Text(
-                    '프로필 수정',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 14,
+      body: ResponsiveContainer.content(
+        child: Column(
+          children: [
+            // Profile section
+            Container(
+              color: AppColors.surface,
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.background,
+                    child: Icon(
+                      Icons.person,
+                      color: AppColors.textSecondary,
+                      size: 28,
                     ),
                   ),
+                  const SizedBox(width: AppSpacing.lg),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '김운동',
+                          style: AppTextStyles.titleMedium,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'workout@gmail.com',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () =>
+                        Navigator.pushNamed(context, '/profile-edit'),
+                    child: Text(
+                      '프로필 수정',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            // Tabs
+            Container(
+              color: AppColors.surface,
+              child: TabBar(
+                controller: _tabController,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: AppColors.textSecondary,
+                indicatorColor: AppColors.primary,
+                indicatorWeight: 2,
+                labelStyle: AppTextStyles.labelMedium.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Tabs
-          Container(
-            color: AppColors.surface,
-            child: TabBar(
-              controller: _tabController,
-              labelColor: AppColors.primary,
-              unselectedLabelColor: AppColors.textSecondary,
-              indicatorColor: AppColors.primary,
-              indicatorWeight: 2,
-              labelStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+                unselectedLabelStyle: AppTextStyles.labelMedium.copyWith(
+                  fontWeight: FontWeight.normal,
+                ),
+                tabs: const [
+                  Tab(text: '참여 중 (2)'),
+                  Tab(text: '배송중 (1)'),
+                  Tab(text: '완료 (3)'),
+                ],
               ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.normal,
+            ),
+            // Order list
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _OrderList(orders: _activeOrders),
+                  _OrderList(orders: _shippingOrders),
+                  _OrderList(orders: _completedOrders),
+                ],
               ),
-              tabs: const [
-                Tab(text: '참여 중 (2)'),
-                Tab(text: '배송중 (1)'),
-                Tab(text: '완료 (3)'),
-              ],
             ),
-          ),
-          // Order list
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _OrderList(orders: _activeOrders),
-                _OrderList(orders: _shippingOrders),
-                _OrderList(orders: _completedOrders),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -176,7 +174,7 @@ class _OrderList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       children: [
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         Container(
           color: AppColors.surface,
           child: Column(
@@ -184,12 +182,12 @@ class _OrderList extends StatelessWidget {
               for (int i = 0; i < orders.length; i++) ...[
                 _OrderCard(item: orders[i]),
                 if (i < orders.length - 1)
-                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  const Divider(height: 1, indent: AppSpacing.lg, endIndent: AppSpacing.lg),
               ],
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         // Menu section
         const Divider(height: 1),
         Container(
@@ -200,15 +198,15 @@ class _OrderList extends StatelessWidget {
                 label: '배송지 관리',
                 onTap: () => Navigator.pushNamed(context, '/addresses'),
               ),
-              const Divider(height: 1, indent: 16, endIndent: 16),
+              const Divider(height: 1, indent: AppSpacing.lg, endIndent: AppSpacing.lg),
               _MenuTile(
                 label: '문의하기',
                 onTap: () => Navigator.pushNamed(context, '/inquiry'),
               ),
-              const Divider(height: 1, indent: 16, endIndent: 16),
+              const Divider(height: 1, indent: AppSpacing.lg, endIndent: AppSpacing.lg),
               _MenuTile(
                 label: '로그아웃',
-                labelColor: AppColors.accentRed,
+                labelColor: AppColors.error,
                 onTap: () => _showLogoutDialog(context),
               ),
             ],
@@ -227,9 +225,9 @@ class _OrderList extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text(
+            child: Text(
               '취소',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
             ),
           ),
           TextButton(
@@ -244,9 +242,9 @@ class _OrderList extends StatelessWidget {
               Navigator.pushNamedAndRemoveUntil(
                   context, '/', (route) => false);
             },
-            child: const Text(
+            child: Text(
               '로그아웃',
-              style: TextStyle(color: AppColors.accentRed),
+              style: AppTextStyles.bodyLarge.copyWith(color: AppColors.error),
             ),
           ),
         ],
@@ -266,11 +264,12 @@ class _OrderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final fund = item.fund;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       child: Row(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.borderSm,
             child: Image.asset(
               fund.imageUrl,
               width: 56,
@@ -284,30 +283,26 @@ class _OrderCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   fund.productName,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: AppTextStyles.bodyLarge.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 item.badge,
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   formatPrice(fund.startPrice),
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: AppTextStyles.bodyLarge.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -342,8 +337,7 @@ class _MenuTile extends StatelessWidget {
       onTap: onTap,
       title: Text(
         label,
-        style: TextStyle(
-          fontSize: 16,
+        style: AppTextStyles.titleMedium.copyWith(
           color: labelColor ?? AppColors.textPrimary,
         ),
       ),

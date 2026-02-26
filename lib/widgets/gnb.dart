@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_breakpoints.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
 
 const _navItems = ['홈', '프로틴페스티벌', '랭킹', '전체딜', '브랜드딜', '기획전', '카테고리'];
 
@@ -26,50 +29,42 @@ class GNB extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth > 768;
+    final isDesktop = AppBreakpoints.isDesktop(context);
 
     return Container(
       height: 56,
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: AppColors.background,
         border: Border(
-          bottom: BorderSide(color: Color(0xFFE5E5E5), width: 1),
+          bottom: BorderSide(color: AppColors.border, width: 1),
         ),
       ),
-      padding: EdgeInsets.symmetric(horizontal: isDesktop ? 24 : 16),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppBreakpoints.horizontalPadding(context),
+      ),
       child: Row(
         children: [
           // Logo
-          GestureDetector(
-            onTap: onLogoTap,
-            child: Row(
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: onLogoTap,
+              child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'GRIT',
-                  style: TextStyle(
-                    color: Color(0xFF1A1A1A),
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const Text(
+                const Text('GRIT', style: AppTextStyles.logo),
+                Text(
                   '%',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
+                  style: AppTextStyles.logo.copyWith(color: AppColors.accent),
                 ),
               ],
+              ),
             ),
           ),
 
           // Desktop nav links
           if (isDesktop) ...[
-            const SizedBox(width: 32),
+            const SizedBox(width: AppSpacing.xxxl),
             Expanded(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -78,12 +73,14 @@ class GNB extends StatelessWidget implements PreferredSizeWidget {
                     final isActive = i == activeNavIndex;
                     return Padding(
                       padding: EdgeInsets.only(
-                          right: i < _navItems.length - 1 ? 24 : 0),
-                      child: GestureDetector(
-                        onTap: () => onNavTap?.call(i),
-                        child: Container(
-                          height: 56,
-                          alignment: Alignment.center,
+                          right: i < _navItems.length - 1 ? AppSpacing.xxl : 0),
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onTap: () => onNavTap?.call(i),
+                          child: Container(
+                            height: 56,
+                            alignment: Alignment.center,
                           decoration: BoxDecoration(
                             border: Border(
                               bottom: BorderSide(
@@ -96,14 +93,14 @@ class GNB extends StatelessWidget implements PreferredSizeWidget {
                           ),
                           child: Text(
                             _navItems[i],
-                            style: TextStyle(
-                              fontSize: 14,
+                            style: AppTextStyles.labelMedium.copyWith(
                               fontWeight: isActive
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
                               color: isActive
-                                  ? AppColors.primary
-                                  : const Color(0xFF333333),
+                                  ? AppColors.textPrimary
+                                  : AppColors.textSecondary,
+                            ),
                             ),
                           ),
                         ),
@@ -119,28 +116,27 @@ class GNB extends StatelessWidget implements PreferredSizeWidget {
           // Right actions
           IconButton(
             onPressed: onSearch,
-            icon: const Icon(Icons.search, size: 24),
-            color: const Color(0xFF333333),
+            icon: const Icon(Icons.search, size: 22),
+            color: AppColors.textPrimary,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: AppSpacing.xs),
           IconButton(
             onPressed: onCart,
-            icon: const Icon(Icons.shopping_cart_outlined, size: 24),
-            color: const Color(0xFF333333),
+            icon: const Icon(Icons.shopping_bag_outlined, size: 22),
+            color: AppColors.textPrimary,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
           ),
           if (isDesktop) ...[
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             GestureDetector(
               onTap: onLogin,
-              child: const Text(
+              child: Text(
                 '로그인',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF333333),
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.textSecondary,
                 ),
               ),
             ),

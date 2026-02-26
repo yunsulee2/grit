@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
 import '../data/mock_data.dart';
 import '../models/fund.dart';
 import '../widgets/gnb.dart';
 import '../widgets/fund_card.dart';
+import '../widgets/responsive_container.dart';
 
 // All category labels shown as filter chips
 const _kCategories = [
@@ -81,65 +85,63 @@ class _CategoryScreenState extends State<CategoryScreen> {
             onLogin: () {},
           ),
           Expanded(
-            child: CustomScrollView(
-              slivers: [
-                // Page title
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(20, 20, 20, 4),
-                    child: Text(
-                      '카테고리',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+            child: ResponsiveContainer.content(
+              child: CustomScrollView(
+                slivers: [
+                  // Page title
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.xl, AppSpacing.xl, AppSpacing.xl, AppSpacing.xs),
+                      child: Text(
+                        '카테고리',
+                        style: AppTextStyles.titleLarge,
                       ),
                     ),
                   ),
-                ),
 
-                // Horizontal category filter chips
-                SliverToBoxAdapter(
-                  child: _CategoryChipsBar(
-                    categories: _kCategories,
-                    selectedIndex: _selectedCategoryIndex,
-                    onSelected: (i) => setState(() => _selectedCategoryIndex = i),
+                  // Horizontal category filter chips
+                  SliverToBoxAdapter(
+                    child: _CategoryChipsBar(
+                      categories: _kCategories,
+                      selectedIndex: _selectedCategoryIndex,
+                      onSelected: (i) => setState(() => _selectedCategoryIndex = i),
+                    ),
                   ),
-                ),
 
-                // Sort row + result count
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-                    child: Row(
-                      children: [
-                        Text(
-                          '총 ${funds.length}개',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
+                  // Sort row + result count
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.xl, AppSpacing.sm, AppSpacing.xl, AppSpacing.xs),
+                      child: Row(
+                        children: [
+                          Text(
+                            '총 ${funds.length}개',
+                            style: AppTextStyles.bodyMedium,
                           ),
-                        ),
-                        const Spacer(),
-                        _SortDropdown(
-                          value: _sortOption,
-                          onChanged: (v) => setState(() => _sortOption = v),
-                        ),
-                      ],
+                          const Spacer(),
+                          _SortDropdown(
+                            value: _sortOption,
+                            onChanged: (v) => setState(() => _sortOption = v),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
 
-                // Grid or empty state
-                funds.isEmpty
-                    ? const SliverFillRemaining(
-                        child: _EmptyState(),
-                      )
-                    : SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                        sliver: _FundGrid(funds: funds),
-                      ),
-              ],
+                  // Grid or empty state
+                  funds.isEmpty
+                      ? const SliverFillRemaining(
+                          child: _EmptyState(),
+                        )
+                      : SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.xl, AppSpacing.sm, AppSpacing.xl, AppSpacing.xxxl),
+                          sliver: _FundGrid(funds: funds),
+                        ),
+                ],
+              ),
             ),
           ),
         ],
@@ -167,9 +169,9 @@ class _CategoryChipsBar extends StatelessWidget {
       height: 48,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
         itemCount: categories.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 8),
+        separatorBuilder: (context, index) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, i) {
           final selected = i == selectedIndex;
           return GestureDetector(
@@ -177,10 +179,10 @@ class _CategoryChipsBar extends StatelessWidget {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               decoration: BoxDecoration(
                 color: selected ? AppColors.primary : AppColors.surface,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: AppRadius.borderFull,
                 border: Border.all(
                   color: selected ? AppColors.primary : AppColors.border,
                   width: 1.5,
@@ -189,8 +191,7 @@ class _CategoryChipsBar extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 categories[i],
-                style: TextStyle(
-                  fontSize: 13,
+                style: AppTextStyles.labelMedium.copyWith(
                   fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
                   color: selected ? AppColors.surface : AppColors.textPrimary,
                 ),
@@ -218,17 +219,14 @@ class _SortDropdown extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.borderSm,
         border: Border.all(color: AppColors.border, width: 1),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<_SortOption>(
           value: value,
           isDense: true,
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textPrimary,
-          ),
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
           icon: const Icon(
             Icons.keyboard_arrow_down_rounded,
             size: 18,
@@ -272,8 +270,8 @@ class _FundGrid extends StatelessWidget {
       ),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+        crossAxisSpacing: AppSpacing.md,
+        mainAxisSpacing: AppSpacing.md,
         childAspectRatio: 0.68,
       ),
     );
@@ -290,28 +288,21 @@ class _EmptyState extends StatelessWidget {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Icon(
+        children: [
+          const Icon(
             Icons.search_off_rounded,
             size: 64,
-            color: AppColors.textDisabled,
+            color: AppColors.textTertiary,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Text(
             '해당 카테고리의 공구가 없어요',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
+            style: AppTextStyles.titleMedium.copyWith(color: AppColors.textSecondary),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             '다른 카테고리를 선택해보세요',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textDisabled,
-            ),
+            style: AppTextStyles.bodyMedium,
           ),
         ],
       ),

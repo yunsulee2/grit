@@ -1,10 +1,15 @@
 """
-Generic product page parser.
+Generic product page parser for food brands and other e-commerce sites.
 
 Layered approach:
-1. httpx with browser-like headers → extract OG meta + JSON-LD + structured data
-2. If httpx blocked/fails → try Playwright headless
-3. If both fail → return partial data with error info
+1. httpx (fastest, works for simple sites with OG tags / JSON-LD)
+2. curl_cffi (TLS fingerprint impersonation, bypasses basic WAF)
+3. Playwright headless (JS rendering for SPAs)
+4. nodriver (real Chrome, for heavily protected sites)
+
+Optimized for Korean food brand websites:
+- Cafe24 / Godomall / Makeshop platforms
+- 마켓컬리, 오아시스마켓, SSG, etc.
 """
 
 import re
@@ -18,7 +23,10 @@ HEADERS = {
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/131.0.0.0 Safari/537.36"
     ),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept": (
+        "text/html,application/xhtml+xml,application/xml;"
+        "q=0.9,image/avif,image/webp,*/*;q=0.8"
+    ),
     "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
     "Accept-Encoding": "gzip, deflate, br",
     "Sec-Fetch-Dest": "document",
@@ -56,6 +64,8 @@ def _is_blocked(html: str) -> bool:
         "challenge",
         "bot detection",
         "에러페이지",
+        "Just a moment",
+        "Checking your browser",
     ]
     lower = html[:3000].lower()
     return any(ind.lower() in lower for ind in indicators)
@@ -99,7 +109,6 @@ def _extract_from_soup(soup: BeautifulSoup, url: str) -> dict:
         "detectedSite": "other",
     }
 
-    # Try JSON-LD first (richest data source)
     json_ld = _extract_json_ld(soup)
 
     # productName
@@ -123,7 +132,7 @@ def _extract_from_soup(soup: BeautifulSoup, url: str) -> dict:
         if brand_meta and brand_meta.get("content"):
             result["brandName"] = brand_meta["content"].strip()
 
-    # originalPrice
+    # originalPrice — multiple extraction strategies
     if json_ld and json_ld.get("offers"):
         offers = json_ld["offers"]
         if isinstance(offers, dict):
@@ -142,20 +151,17 @@ def _extract_from_soup(soup: BeautifulSoup, url: str) -> dict:
                     pass
 
     if not result["originalPrice"]:
-        # Try product:price:amount meta
         price_meta = soup.find("meta", {"property": "product:price:amount"})
         if price_meta and price_meta.get("content"):
             result["originalPrice"] = _parse_price(price_meta["content"])
 
     if not result["originalPrice"]:
-        # Try itemprop="price"
         price_tag = soup.find(attrs={"itemprop": "price"})
         if price_tag:
             price_val = price_tag.get("content") or price_tag.get_text()
             result["originalPrice"] = _parse_price(price_val)
 
     if not result["originalPrice"]:
-        # Fallback: class containing "price"
         price_candidates = soup.find_all(class_=re.compile(r"price", re.IGNORECASE))
         for candidate in price_candidates[:5]:
             text = candidate.get_text(strip=True)
@@ -194,18 +200,58 @@ def _extract_from_soup(soup: BeautifulSoup, url: str) -> dict:
                 if normalized and normalized not in result["galleryImages"]:
                     result["galleryImages"].append(normalized)
 
-    # detailImages from main content
+    # detailImages — comprehensive selectors for food brand sites
+    detail_selectors = [
+        # Common e-commerce detail containers
+        "#prdDetail img",
+        "div.detail_wrap img",
+        "div.detail_area img",
+        "div.product-detail img",
+        "div.goods_description img",
+        "div.item_detail_cont img",
+        # Korean platforms (Cafe24, Godomall, Makeshop)
+        "div.detail_cont img",
+        "div#goods_description img",
+        "div.goods-body img",
+        "div.txt-manual img",
+        "div.product_detail_desc img",
+        # Generic fallback
+        "main img",
+        "article img",
+    ]
+
     main_content = (
         soup.find("main")
         or soup.find("article")
-        or soup.find(id=re.compile(r"(content|detail|product)", re.IGNORECASE))
-        or soup.find(class_=re.compile(r"(content|detail|product)", re.IGNORECASE))
+        or soup.find(id=re.compile(r"(content|detail|product|prdDetail)", re.IGNORECASE))
+        or soup.find(class_=re.compile(r"(content|detail|product|goods)", re.IGNORECASE))
     )
-    if main_content:
-        imgs = main_content.select("img")
+
+    # Try specific detail selectors first
+    for selector in detail_selectors:
+        try:
+            imgs = soup.select(selector)
+            if imgs and len(imgs) >= 2:
+                seen = set()
+                for img in imgs:
+                    src = _normalize_image(
+                        img.get("src") or img.get("data-src") or img.get("data-lazy-src") or img.get("data-original")
+                    )
+                    if src and src not in seen and not src.endswith((".svg", ".gif", ".ico")):
+                        seen.add(src)
+                        result["detailImages"].append(src)
+                if result["detailImages"]:
+                    break
+        except Exception:
+            continue
+
+    # Fallback to main content area
+    if not result["detailImages"] and main_content:
         seen = set()
-        for img in imgs:
-            src = _normalize_image(img.get("src") or img.get("data-src") or img.get("data-lazy-src"))
+        for img in main_content.select("img"):
+            src = _normalize_image(
+                img.get("src") or img.get("data-src") or img.get("data-lazy-src")
+            )
             if src and src not in seen and not src.endswith((".svg", ".gif", ".ico")):
                 seen.add(src)
                 result["detailImages"].append(src)
@@ -231,8 +277,29 @@ async def _fetch_with_httpx(url: str) -> str | None:
         return None
 
 
+async def _fetch_with_curl(url: str) -> str | None:
+    """Fetch page with curl_cffi (TLS fingerprint impersonation)."""
+    try:
+        from parsers.http_client import fetch_with_curl
+        return await fetch_with_curl(url)
+    except Exception as e:
+        print(f"[generic] curl_cffi failed: {e}")
+        return None
+
+
+async def _fetch_with_nodriver(url: str) -> str | None:
+    """Fetch page with nodriver (real Chrome, anti-detection)."""
+    try:
+        from parsers.browser import fetch_with_nodriver
+        html = await fetch_with_nodriver(url, wait_seconds=5)
+        return html
+    except Exception as e:
+        print(f"[generic] nodriver failed: {e}")
+        return None
+
+
 async def _fetch_with_playwright(url: str) -> str | None:
-    """Fetch page with Playwright headless. Returns HTML or None if blocked."""
+    """Fetch page with Playwright headless."""
     try:
         from playwright.async_api import async_playwright
     except ImportError:
@@ -253,18 +320,13 @@ async def _fetch_with_playwright(url: str) -> str | None:
             await page.add_init_script(
                 'Object.defineProperty(navigator, "webdriver", {get: () => undefined});'
             )
-
-            # Block heavy resources
             await page.route("**/*.{mp4,webm,ogg,mp3,wav}", lambda route: route.abort())
 
             try:
                 await page.goto(url, wait_until="domcontentloaded", timeout=20000)
                 await page.wait_for_timeout(3000)
-
-                # Scroll to trigger lazy loading
                 await page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2)")
                 await page.wait_for_timeout(1000)
-
                 html = await page.content()
             finally:
                 await browser.close()
@@ -278,27 +340,68 @@ async def _fetch_with_playwright(url: str) -> str | None:
         return None
 
 
+def _has_meaningful_data(result: dict) -> bool:
+    """Check if extracted data has meaningful product info."""
+    name = result.get("productName")
+    price = result.get("originalPrice")
+    image = result.get("mainImage")
+    detail_images = result.get("detailImages", [])
+    return bool(name and (price or image or detail_images))
+
+
 async def parse_generic(url: str) -> dict:
     """
     Parse any product page using a layered approach:
-    1. httpx (fast, works for most sites)
-    2. Playwright (for JS-rendered sites)
-    3. Error with guidance if both fail
+    1. httpx (fastest, works for most food brand sites)
+    2. curl_cffi (TLS impersonation, for sites with basic WAF)
+    3. Playwright (JS rendering for SPAs)
+    4. nodriver (real Chrome, for heavily protected sites)
     """
-    # Layer 1: Try httpx
+    # Layer 1: httpx (fastest)
     html = await _fetch_with_httpx(url)
+    if html:
+        soup = BeautifulSoup(html, "lxml")
+        result = _extract_from_soup(soup, url)
+        if _has_meaningful_data(result):
+            print(f"[generic] httpx succeeded for {url}")
+            return result
+        print("[generic] httpx got HTML but no meaningful data, escalating...")
 
-    # Layer 2: Try Playwright if httpx failed
-    if not html:
-        print(f"[generic] httpx failed for {url}, trying Playwright...")
-        html = await _fetch_with_playwright(url)
+    # Layer 2: curl_cffi (TLS fingerprint bypass)
+    print(f"[generic] Trying curl_cffi for {url}...")
+    html = await _fetch_with_curl(url)
+    if html:
+        soup = BeautifulSoup(html, "lxml")
+        result = _extract_from_soup(soup, url)
+        if _has_meaningful_data(result):
+            print(f"[generic] curl_cffi succeeded for {url}")
+            return result
+        print("[generic] curl_cffi got HTML but no meaningful data, escalating...")
 
-    # Both failed
-    if not html:
-        raise RuntimeError(
-            "이 사이트는 자동 접근이 차단되어 있습니다. "
-            "상품 정보를 직접 입력해 주세요."
-        )
+    # Layer 3: Playwright (JS rendering)
+    print(f"[generic] Trying Playwright for {url}...")
+    html = await _fetch_with_playwright(url)
+    if html:
+        soup = BeautifulSoup(html, "lxml")
+        result = _extract_from_soup(soup, url)
+        if _has_meaningful_data(result):
+            print(f"[generic] Playwright succeeded for {url}")
+            return result
+        print("[generic] Playwright got HTML but no meaningful data, escalating...")
 
-    soup = BeautifulSoup(html, "lxml")
-    return _extract_from_soup(soup, url)
+    # Layer 4: nodriver (real Chrome, anti-detection)
+    print(f"[generic] Trying nodriver for {url}...")
+    html = await _fetch_with_nodriver(url)
+    if html:
+        soup = BeautifulSoup(html, "lxml")
+        result = _extract_from_soup(soup, url)
+        if _has_meaningful_data(result):
+            print(f"[generic] nodriver succeeded for {url}")
+            return result
+        print("[generic] nodriver got HTML but limited data")
+        return result
+
+    raise RuntimeError(
+        "이 사이트에서 상품 정보를 가져올 수 없습니다. "
+        "상품 정보를 직접 입력해 주세요."
+    )

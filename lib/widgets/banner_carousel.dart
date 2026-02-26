@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
 
 class BannerCarousel extends StatefulWidget {
   const BannerCarousel({super.key});
@@ -18,7 +20,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
     _BannerData(
       title: '피트니스 식품 공동구매',
       subtitle: '같이 사면 더 싸다!\n최대 30% 할인',
-      gradient: [AppColors.primary, const Color(0xFFFF8F65)],
+      gradient: [AppColors.primary, const Color(0xFF333333)],
       icon: Icons.fitness_center,
     ),
     _BannerData(
@@ -77,7 +79,10 @@ class _BannerCarouselState extends State<BannerCarousel> {
                     end: Alignment.bottomRight,
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xxl,
+                  vertical: AppSpacing.xxl,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -87,19 +92,15 @@ class _BannerCarouselState extends State<BannerCarousel> {
                         children: [
                           Text(
                             banner.title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
+                            style: AppTextStyles.labelMedium.copyWith(
+                              color: AppColors.textInverse,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.sm),
                           Text(
                             banner.subtitle,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
+                            style: AppTextStyles.titleLarge.copyWith(
+                              color: AppColors.textInverse,
                               height: 1.3,
                             ),
                           ),
@@ -109,7 +110,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
                     Icon(
                       banner.icon,
                       size: 64,
-                      color: Colors.white.withValues(alpha: 0.3),
+                      color: AppColors.textInverse.withValues(alpha: 0.3),
                     ),
                   ],
                 ),
@@ -118,7 +119,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
           ),
           // Dot indicator
           Positioned(
-            bottom: 12,
+            bottom: AppSpacing.md,
             left: 0,
             right: 0,
             child: Row(
@@ -131,8 +132,8 @@ class _BannerCarouselState extends State<BannerCarousel> {
                   margin: const EdgeInsets.symmetric(horizontal: 3),
                   decoration: BoxDecoration(
                     color: i == _currentPage
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.4),
+                        ? AppColors.textInverse
+                        : AppColors.textInverse.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),

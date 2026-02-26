@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:grit/theme/app_colors.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
 
 class StickyCtaBar extends StatelessWidget {
   final VoidCallback onShare;
@@ -15,21 +18,17 @@ class StickyCtaBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x1A000000),
-            offset: Offset(0, -2),
-            blurRadius: 8,
-          ),
-        ],
+        color: AppColors.surfaceElevated,
+        border: Border(
+          top: BorderSide(color: AppColors.borderSubtle, width: 1),
+        ),
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
           height: 72,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Row(
               children: [
                 // Share icon button
@@ -42,17 +41,17 @@ class StickyCtaBar extends StatelessWidget {
                       padding: EdgeInsets.zero,
                       side: const BorderSide(color: AppColors.border),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppRadius.borderSm,
                       ),
                     ),
                     child: const Icon(
                       Icons.share,
-                      color: AppColors.secondary,
+                      color: AppColors.textPrimary,
                       size: 22,
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.md),
                 // Participate button
                 Expanded(
                   child: SizedBox(
@@ -61,18 +60,17 @@ class StickyCtaBar extends StatelessWidget {
                       onPressed: onParticipate,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.surface,
+                        foregroundColor: AppColors.onPrimary,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: AppRadius.borderSm,
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         '공동구매 참여하기',
-                        style: TextStyle(
-                          fontSize: 16,
+                        style: AppTextStyles.labelLarge.copyWith(
+                          color: AppColors.onPrimary,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.surface,
                         ),
                       ),
                     ),

@@ -10,6 +10,9 @@ import '../widgets/scrape_progress.dart';
 import '../widgets/extraction_result_form.dart';
 import '../widgets/scrape_error_view.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../widgets/responsive_container.dart';
 
 enum _ScrapeState { input, loading, result, error }
 
@@ -125,25 +128,17 @@ class _UrlScrapeScreenState extends State<UrlScrapeScreen> {
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.of(context).pop(null),
         ),
-        title: const Text(
+        title: Text(
           'URL로 빠른 등록',
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
+          style: AppTextStyles.titleMedium,
         ),
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
           child: Divider(height: 1, color: AppColors.border),
         ),
       ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: _buildBody(isDesktop),
-        ),
+      body: ResponsiveContainer.form(
+        child: _buildBody(isDesktop),
       ),
     );
   }
@@ -164,25 +159,22 @@ class _UrlScrapeScreenState extends State<UrlScrapeScreen> {
   Widget _buildInputState(bool isDesktop) {
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(
-        horizontal: isDesktop ? 48 : 20,
-        vertical: isDesktop ? 48 : 32,
+        horizontal: isDesktop ? AppSpacing.xxxxl : AppSpacing.xl,
+        vertical: isDesktop ? AppSpacing.xxxxl : AppSpacing.xxxl,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '상품 URL 입력',
-            style: TextStyle(
-              fontSize: 22,
+            style: AppTextStyles.titleLarge.copyWith(
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 8),
-          const Text(
+          const SizedBox(height: AppSpacing.sm),
+          Text(
             '쇼핑몰 상품 페이지 URL을 입력하면 상품 정보를 자동으로 불러옵니다.',
-            style: TextStyle(
-              fontSize: 14,
+            style: AppTextStyles.bodyLarge.copyWith(
               color: AppColors.textSecondary,
               height: 1.5,
             ),
@@ -205,18 +197,20 @@ class _UrlScrapeScreenState extends State<UrlScrapeScreen> {
   Widget _buildResultState(bool isDesktop) {
     final product = _extractedProduct;
     if (product == null) {
-      return const Center(
+      return Center(
         child: Text(
           '상품 정보를 불러올 수 없습니다.',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: AppTextStyles.bodyLarge.copyWith(
+            color: AppColors.textSecondary,
+          ),
         ),
       );
     }
 
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(
-        horizontal: isDesktop ? 48 : 20,
-        vertical: isDesktop ? 32 : 20,
+        horizontal: isDesktop ? AppSpacing.xxxxl : AppSpacing.xl,
+        vertical: isDesktop ? AppSpacing.xxxl : AppSpacing.xl,
       ),
       child: ExtractionResultForm(
         product: product,

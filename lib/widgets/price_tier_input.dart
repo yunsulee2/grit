@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
 
 class PriceTierInput extends StatelessWidget {
   final int index;
@@ -34,9 +37,9 @@ class PriceTierInput extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -46,24 +49,20 @@ class PriceTierInput extends StatelessWidget {
             children: [
               Text(
                 '단계 ${index + 1}',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+                style: AppTextStyles.titleSmall,
               ),
               if (onDelete != null)
                 GestureDetector(
                   onTap: onDelete,
                   child: const Icon(
                     Icons.close,
-                    size: 20,
+                    size: AppSpacing.xl,
                     color: AppColors.textSecondary,
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           // Input row
           Row(
             children: [
@@ -74,7 +73,7 @@ class PriceTierInput extends StatelessWidget {
                   onChanged: (val) => onChange(val, price),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _NumberField(
                   initialValue: price,
@@ -85,13 +84,12 @@ class PriceTierInput extends StatelessWidget {
             ],
           ),
           if (discount != null) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               '$discount% 할인',
-              style: const TextStyle(
-                fontSize: 13,
+              style: AppTextStyles.bodyMedium.copyWith(
                 fontWeight: FontWeight.w600,
-                color: AppColors.successGreen,
+                color: AppColors.success,
               ),
             ),
           ],
@@ -153,22 +151,21 @@ class _NumberFieldState extends State<_NumberField> {
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       decoration: InputDecoration(
         suffixText: widget.suffix,
-        suffixStyle: const TextStyle(
-          fontSize: 13,
-          color: AppColors.textSecondary,
+        suffixStyle: AppTextStyles.bodyMedium,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: 10,
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppRadius.borderSm,
           borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppRadius.borderSm,
           borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppRadius.borderSm,
           borderSide: const BorderSide(color: AppColors.primary),
         ),
       ),

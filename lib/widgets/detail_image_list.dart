@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
 import '../services/scrape_service.dart';
 
 class DetailImageList extends StatefulWidget {
@@ -83,7 +86,7 @@ class _DetailImageListState extends State<DetailImageList> {
       height: 200,
       color: AppColors.border,
       child: const Center(
-        child: Icon(Icons.broken_image_outlined, color: AppColors.textDisabled, size: 40),
+        child: Icon(Icons.broken_image_outlined, color: AppColors.textTertiary, size: 40),
       ),
     );
   }
@@ -99,30 +102,27 @@ class _DetailImageListState extends State<DetailImageList> {
         // ── Header ──────────────────────────────────────────────────────────
         Text(
           '상세페이지 이미지 (${_images.length}장)',
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
+          style: AppTextStyles.titleSmall,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
 
         // ── Toggle row ───────────────────────────────────────────────────────
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.borderSm,
             border: Border.all(color: AppColors.border),
           ),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   '원본 상세페이지 그대로 사용',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
+                  style: AppTextStyles.bodyLarge.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -135,7 +135,7 @@ class _DetailImageListState extends State<DetailImageList> {
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
 
         // ── Content area ─────────────────────────────────────────────────────
         if (widget.useOriginal) ...[
@@ -144,15 +144,14 @@ class _DetailImageListState extends State<DetailImageList> {
               height: 120,
               decoration: BoxDecoration(
                 color: AppColors.background,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.borderSm,
                 border: Border.all(color: AppColors.border),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
                   '상세 이미지가 없습니다',
-                  style: TextStyle(
-                    color: AppColors.textDisabled,
-                    fontSize: 14,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: AppColors.textTertiary,
                   ),
                 ),
               ),
@@ -174,57 +173,52 @@ class _DetailImageListState extends State<DetailImageList> {
                 return _buildImageCard(index, url, displayCount, key: ValueKey(url + index.toString()));
               },
             ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           // ── Info text ──────────────────────────────────────────────────────
           Row(
-            children: const [
-              Icon(Icons.info_outline, size: 13, color: AppColors.textSecondary),
-              SizedBox(width: 4),
+            children: [
+              const Icon(Icons.info_outline, size: 13, color: AppColors.textSecondary),
+              const SizedBox(width: AppSpacing.xs),
               Text(
                 '최대 30장까지 표시됩니다',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
+                style: AppTextStyles.bodySmall,
               ),
             ],
           ),
         ] else ...[
           // ── Text editor ─────────────────────────────────────────────────────
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
               color: AppColors.background,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.borderSm,
               border: Border.all(color: AppColors.border),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  children: const [
-                    Icon(Icons.edit_note, color: AppColors.primary, size: 18),
-                    SizedBox(width: 6),
+                  children: [
+                    const Icon(Icons.edit_note, color: AppColors.primary, size: 18),
+                    const SizedBox(width: 6),
                     Text(
                       '상세페이지 직접 작성',
-                      style: TextStyle(
-                        fontSize: 13,
+                      style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 TextField(
                   controller: _textController,
                   maxLines: 6,
                   enabled: true,
                   decoration: InputDecoration(
                     hintText: '상세페이지 내용을 입력하세요',
-                    hintStyle: const TextStyle(
-                      color: AppColors.textDisabled,
-                      fontSize: 13,
+                    hintStyle: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textTertiary,
                     ),
                     filled: true,
                     fillColor: AppColors.surface,
@@ -240,7 +234,7 @@ class _DetailImageListState extends State<DetailImageList> {
                       borderRadius: BorderRadius.circular(6),
                       borderSide: const BorderSide(color: AppColors.primary),
                     ),
-                    contentPadding: const EdgeInsets.all(12),
+                    contentPadding: const EdgeInsets.all(AppSpacing.md),
                   ),
                 ),
               ],
@@ -254,11 +248,11 @@ class _DetailImageListState extends State<DetailImageList> {
   Widget _buildImageCard(int index, String url, int total, {required Key key}) {
     return Padding(
       key: key,
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Card(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppRadius.borderSm,
           side: const BorderSide(color: AppColors.border),
         ),
         color: AppColors.surface,
@@ -279,7 +273,7 @@ class _DetailImageListState extends State<DetailImageList> {
                 child: const Center(
                   child: Icon(
                     Icons.drag_handle,
-                    color: Colors.white,
+                    color: AppColors.textInverse,
                     size: 20,
                   ),
                 ),
@@ -288,8 +282,8 @@ class _DetailImageListState extends State<DetailImageList> {
 
             // ── Delete button (top-right) ────────────────────────────────────
             Positioned(
-              top: 8,
-              right: 8,
+              top: AppSpacing.sm,
+              right: AppSpacing.sm,
               child: GestureDetector(
                 onTap: () => _deleteImage(index),
                 child: Container(
@@ -299,26 +293,28 @@ class _DetailImageListState extends State<DetailImageList> {
                     color: Colors.black.withValues(alpha: 0.55),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.close, size: 16, color: Colors.white),
+                  child: const Icon(Icons.close, size: 16, color: AppColors.textInverse),
                 ),
               ),
             ),
 
             // ── Image number label (bottom-left) ─────────────────────────────
             Positioned(
-              bottom: 8,
+              bottom: AppSpacing.sm,
               left: 44,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: 3,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.50),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.borderMd,
                 ),
                 child: Text(
                   '${index + 1}/$total',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textInverse,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

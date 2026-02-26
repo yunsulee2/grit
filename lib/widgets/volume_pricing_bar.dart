@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:grit/models/fund.dart';
-import 'package:grit/theme/app_colors.dart';
-import 'package:grit/widgets/participant_badge.dart';
+import '../models/fund.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import 'participant_badge.dart';
 
 class VolumePricingBar extends StatelessWidget {
   final List<PriceTier> tiers;
@@ -80,22 +82,20 @@ class _SmallBar extends StatelessWidget {
           children: [
             Text(
               '${formatNumber(currentParticipants)}개',
-              style: const TextStyle(
+              style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.primary,
-                fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
               '목표 ${formatNumber(maxParticipants)}개',
-              style: const TextStyle(
+              style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.textSecondary,
-                fontSize: 12,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.xs),
         _ProgressTrack(height: 4, progress: progress, useGradient: false),
       ],
     );
@@ -147,14 +147,14 @@ class _LargeBar extends StatelessWidget {
             );
           },
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         // Progress bar with tier markers and end dot
         _LargeProgressTrack(
           tiers: tiers,
           maxParticipants: maxParticipants,
           progress: progress,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         // Tier labels below the bar
         _TierLabels(
           tiers: tiers,
@@ -220,7 +220,7 @@ class _LargeProgressTrack extends StatelessWidget {
                           ? AppColors.primary
                           : AppColors.border,
                       border: Border.all(
-                        color: Colors.white,
+                        color: AppColors.textInverse,
                         width: 2,
                       ),
                     ),
@@ -234,12 +234,12 @@ class _LargeProgressTrack extends StatelessWidget {
                 child: Container(
                   width: dotSize,
                   height: dotSize,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: AppColors.primary,
                     boxShadow: [
                       BoxShadow(
-                        color: Color(0x40FF6B35),
+                        color: AppColors.accent.withValues(alpha: 0.25),
                         blurRadius: 4,
                         spreadRadius: 1,
                       ),
@@ -316,7 +316,7 @@ class _TrackPainter extends CustomPainter {
     if (useGradient) {
       fillPaint = Paint()
         ..shader = LinearGradient(
-          colors: [AppColors.primary, AppColors.accentRed],
+          colors: [AppColors.primary, AppColors.error],
         ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     } else {
       fillPaint = Paint()..color = AppColors.primary;
@@ -388,9 +388,8 @@ class _TierLabel extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: AppTextStyles.labelSmall.copyWith(
             color: achieved ? AppColors.primary : AppColors.textSecondary,
-            fontSize: 11,
             fontWeight: achieved ? FontWeight.bold : FontWeight.normal,
           ),
           textAlign: TextAlign.center,
@@ -398,17 +397,16 @@ class _TierLabel extends StatelessWidget {
         if (subLabel != null)
           Text(
             subLabel!,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
+            style: AppTextStyles.labelSmall.copyWith(
               fontSize: 10,
+              color: AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
         Text(
           price,
-          style: TextStyle(
+          style: AppTextStyles.bodySmall.copyWith(
             color: achieved ? AppColors.primary : AppColors.textSecondary,
-            fontSize: 12,
             fontWeight: FontWeight.bold,
           ),
           textAlign: TextAlign.center,

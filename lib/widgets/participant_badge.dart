@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:grit/theme/app_colors.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
 
 class ParticipantBadge extends StatelessWidget {
   final int count;
@@ -30,16 +33,18 @@ class ParticipantBadge extends StatelessWidget {
     return CustomPaint(
       painter: _BubblePainter(),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: const BoxDecoration(
-          color: Color(0xFF1A1A1A),
-          borderRadius: BorderRadius.all(Radius.circular(4)),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.textPrimary,
+          borderRadius: AppRadius.borderXs,
         ),
         child: Text(
           '${_formatNumber(count)}개 돌파!',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 13,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textInverse,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -52,7 +57,7 @@ class _BubblePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.secondary
+      ..color = AppColors.textPrimary
       ..style = PaintingStyle.fill;
 
     // Draw triangle pointer at bottom center

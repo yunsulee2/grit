@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_breakpoints.dart';
 import '../data/mock_data.dart';
 import '../models/fund.dart';
 import '../widgets/gnb.dart';
@@ -66,9 +70,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth > 960;
-    final isMobile = screenWidth <= 768;
+    final isDesktop = AppBreakpoints.isDesktop(context);
+    final isMobile = AppBreakpoints.isMobile(context);
     final columnCount = isMobile ? 2 : 3;
     final funds = _filteredFunds;
 
@@ -97,9 +100,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   // Content area with max-width constraint
                   Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1280),
+                      constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxPageWidth),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
                         child: isDesktop
                             ? Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Expanded(
                                     child: _buildMainContent(funds, columnCount),
                                   ),
-                                  const SizedBox(width: 24),
+                                  const SizedBox(width: AppSpacing.xxl),
                                   SizedBox(
                                     width: 280,
                                     child: _buildSidePanel(),
@@ -133,14 +136,10 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         // Section header
         const Padding(
-          padding: EdgeInsets.fromLTRB(0, 20, 0, 12),
+          padding: EdgeInsets.fromLTRB(0, AppSpacing.xl, 0, AppSpacing.md),
           child: Text(
             '오늘의 추천 딜',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+            style: AppTextStyles.titleLarge,
           ),
         ),
 
@@ -150,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
           selectedIndex: _selectedCategoryIndex,
           onSelected: (i) => setState(() => _selectedCategoryIndex = i),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
 
         // Filter chips
         FilterChipsBar(
@@ -158,13 +157,13 @@ class _HomeScreenState extends State<HomeScreen> {
           selected: _activeFilters,
           onToggle: _toggleFilter,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
 
         // Card grid
         _buildCardGrid(funds, columnCount),
 
         // Bottom padding
-        const SizedBox(height: 32),
+        const SizedBox(height: AppSpacing.xxxl),
       ],
     );
   }
@@ -179,7 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        const spacing = 12.0;
+        const spacing = AppSpacing.md;
         final cardWidth =
             (constraints.maxWidth - spacing * (columnCount - 1)) / columnCount;
 
@@ -213,24 +212,20 @@ class _HomeScreenState extends State<HomeScreen> {
         : mockFunds.skip(1).toList();
 
     return Padding(
-      padding: const EdgeInsets.only(top: 20),
+      padding: const EdgeInsets.only(top: AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Featured product ───────────────────────────────────────────
           const Text(
             '지금 가장 인기있는 딜',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+            style: AppTextStyles.titleSmall,
           ),
           const SizedBox(height: 10),
           Container(
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.borderMd,
               border: Border.all(color: AppColors.border, width: 1),
             ),
             clipBehavior: Clip.antiAlias,
@@ -249,14 +244,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Icon(
                           Icons.fastfood,
                           size: 36,
-                          color: AppColors.textDisabled,
+                          color: AppColors.textTertiary,
                         ),
                       ),
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -264,46 +259,36 @@ class _HomeScreenState extends State<HomeScreen> {
                         featured.productName,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: AppTextStyles.bodyMedium.copyWith(
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
                           height: 1.4,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: AppSpacing.sm - 2),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.baseline,
                         textBaseline: TextBaseline.alphabetic,
                         children: [
                           Text(
                             '${featured.discountPercent}%',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.accentRed,
+                            style: AppTextStyles.titleSmall.copyWith(
+                              color: AppColors.error,
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: AppSpacing.sm - 2),
                           Text(
                             _formatPrice(featured.targetPrice),
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
+                            style: AppTextStyles.titleSmall.copyWith(
                               color: AppColors.textPrimary,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         _formatPrice(featured.startPrice),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                          decoration: TextDecoration.lineThrough,
-                          decorationColor: AppColors.textSecondary,
-                        ),
+                        style: AppTextStyles.priceStrike,
                       ),
                     ],
                   ),
@@ -312,16 +297,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xxl),
 
           // ── Upcoming section ───────────────────────────────────────────
           const Text(
             '다음 공동구매 미리보기',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+            style: AppTextStyles.titleSmall,
           ),
           const SizedBox(height: 10),
 
@@ -369,7 +350,7 @@ class _UpcomingCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
         border: Border.all(color: AppColors.border, width: 1),
       ),
       padding: const EdgeInsets.all(10),
@@ -377,7 +358,7 @@ class _UpcomingCard extends StatelessWidget {
         children: [
           // Thumbnail
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.borderSm,
             child: SizedBox(
               width: 60,
               height: 60,
@@ -390,7 +371,7 @@ class _UpcomingCard extends StatelessWidget {
                     child: Icon(
                       Icons.fastfood,
                       size: 24,
-                      color: AppColors.textDisabled,
+                      color: AppColors.textTertiary,
                     ),
                   ),
                 ),
@@ -405,30 +386,25 @@ class _UpcomingCard extends StatelessWidget {
               children: [
                 Text(
                   fund.brandName,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: AppTextStyles.caption,
                 ),
                 const SizedBox(height: 2),
                 Text(
                   fund.productName,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: AppTextStyles.bodySmall.copyWith(
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary,
                     height: 1.3,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   _formatPrice(fund.targetPrice),
-                  style: const TextStyle(
-                    fontSize: 13,
+                  style: AppTextStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.accentRed,
+                    color: AppColors.error,
                   ),
                 ),
               ],
@@ -454,24 +430,17 @@ class _EmptyState extends StatelessWidget {
           Icon(
             Icons.search_off_rounded,
             size: 64,
-            color: AppColors.textDisabled,
+            color: AppColors.textTertiary,
           ),
-          SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
           Text(
             '해당 조건의 공구가 없어요',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
+            style: AppTextStyles.titleMedium,
           ),
-          SizedBox(height: 8),
+          SizedBox(height: AppSpacing.sm),
           Text(
             '다른 카테고리나 필터를 선택해보세요',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textDisabled,
-            ),
+            style: AppTextStyles.bodyMedium,
           ),
         ],
       ),

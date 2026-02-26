@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
 
 enum BadgeType {
   active,
@@ -56,11 +59,11 @@ class StatusBadge extends StatelessWidget {
       case BadgeType.active:
         return AppColors.primary;
       case BadgeType.endingSoon:
-        return AppColors.accentRed;
+        return AppColors.error;
       case BadgeType.completed:
-        return AppColors.successGreen;
+        return AppColors.success;
       case BadgeType.freeShipping:
-        return const Color(0xFFF0F0F0);
+        return AppColors.borderSubtle;
       case BadgeType.custom:
         return customBgColor ?? AppColors.primary;
     }
@@ -82,15 +85,17 @@ class StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 2,
+      ),
       decoration: BoxDecoration(
         color: _bgColor,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadius.borderXs,
       ),
       child: Text(
         text,
-        style: TextStyle(
-          fontSize: 11,
+        style: AppTextStyles.labelSmall.copyWith(
           fontWeight: FontWeight.w600,
           color: _textColor,
           height: 1.4,

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
+import '../widgets/responsive_container.dart';
 
 class _Address {
   final String name;
@@ -53,18 +57,20 @@ class AddressScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('배송지 관리'),
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _addresses.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final addr = _addresses[index];
-          return _AddressCard(
-            address: addr,
-            onEdit: () => _showPlaceholder(context, '준비 중'),
-            onDelete: () => _showPlaceholder(context, '준비 중'),
-          );
-        },
+      body: ResponsiveContainer.form(
+        child: ListView.separated(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          itemCount: _addresses.length,
+          separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.md),
+          itemBuilder: (context, index) {
+            final addr = _addresses[index];
+            return _AddressCard(
+              address: addr,
+              onEdit: () => _showPlaceholder(context, '준비 중'),
+              onDelete: () => _showPlaceholder(context, '준비 중'),
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showPlaceholder(context, '새 배송지 추가는 준비 중입니다'),
@@ -90,10 +96,10 @@ class _AddressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -103,26 +109,24 @@ class _AddressCard extends StatelessWidget {
             children: [
               Text(
                 address.name,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+                style: AppTextStyles.titleSmall,
               ),
               if (address.isDefault) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs / 2,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: AppRadius.borderXs,
                   ),
-                  child: const Text(
+                  child: Text(
                     '기본 배송지',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                    style: AppTextStyles.labelSmall.copyWith(
                       color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -131,51 +135,47 @@ class _AddressCard extends StatelessWidget {
               TextButton(
                 onPressed: onEdit,
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
+                  ),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text(
+                child: Text(
                   '수정',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: AppTextStyles.bodyMedium,
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppSpacing.xs),
               TextButton(
                 onPressed: onDelete,
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
+                  ),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text(
+                child: Text(
                   '삭제',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.accentRed,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.error,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             address.address,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textPrimary,
-            ),
+            style: AppTextStyles.bodyLarge,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             address.phone,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
+            style: AppTextStyles.bodyMedium,
           ),
         ],
       ),

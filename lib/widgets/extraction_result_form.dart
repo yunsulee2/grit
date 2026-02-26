@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/extracted_product.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_radius.dart';
 import '../widgets/extraction_status_icon.dart';
 import '../widgets/image_grid_editor.dart';
 import '../widgets/detail_image_list.dart';
@@ -138,9 +141,7 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
             onTap: () {},
             child: Text(
               '원본: ${p.sourceUrl}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
+              style: AppTextStyles.bodySmall.copyWith(
                 decoration: TextDecoration.underline,
                 decorationColor: AppColors.textSecondary,
               ),
@@ -149,7 +150,7 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
           ),
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: AppSpacing.xl),
 
         // ── 상품명 ─────────────────────────────────────────────────────────────
         _FieldLabel(label: '상품명', confidence: p.productName.confidence),
@@ -160,7 +161,7 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
           onChanged: (v) => _notifyChanged(productName: v),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
 
         // ── 브랜드명 ───────────────────────────────────────────────────────────
         _FieldLabel(label: '브랜드명', confidence: p.brandName.confidence),
@@ -171,14 +172,14 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
           onChanged: (v) => _notifyChanged(brandName: v),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
 
         // ── 카테고리 ───────────────────────────────────────────────────────────
         _FieldLabel(label: '카테고리', confidence: p.category.confidence),
         const SizedBox(height: 6),
         _buildCategoryDropdown(),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
 
         // ── 원산지 ─────────────────────────────────────────────────────────────
         _FieldLabel(label: '원산지', confidence: p.origin.confidence),
@@ -189,7 +190,7 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
           onChanged: (v) => _notifyChanged(origin: v),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
 
         // ── 용량/중량 ──────────────────────────────────────────────────────────
         _FieldLabel(label: '용량/중량', confidence: p.weight.confidence),
@@ -200,7 +201,7 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
           onChanged: (v) => _notifyChanged(weight: v),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
 
         // ── 참고 가격 ──────────────────────────────────────────────────────────
         _FieldLabel(label: '원본 판매가 (참고용)', confidence: p.originalPrice.confidence),
@@ -213,7 +214,7 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
           onChanged: (v) => _notifyChanged(price: v),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
 
         // ── 상품 설명 ──────────────────────────────────────────────────────────
         _FieldLabel(label: '상품 설명', confidence: p.description.confidence),
@@ -225,7 +226,7 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
           onChanged: (v) => _notifyChanged(description: v),
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.xxl),
 
         // ── 이미지 섹션 ────────────────────────────────────────────────────────
         ImageGridEditor(
@@ -247,7 +248,7 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
           },
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.xxl),
 
         // ── 상세페이지 이미지 섹션 ─────────────────────────────────────────────
         DetailImageList(
@@ -264,22 +265,22 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
           },
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.xxl),
 
         // ── 옵션 섹션 ──────────────────────────────────────────────────────────
         if (options != null && options.isNotEmpty) ...[
           const _SectionDividerLabel(label: '옵션'),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           _buildOptionsSection(options),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xxl),
         ],
 
         // ── 영양 정보 섹션 ─────────────────────────────────────────────────────
         if (nutrition != null) ...[
           const _SectionDividerLabel(label: '영양 정보'),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           _buildNutritionGrid(nutrition),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xxl),
         ],
 
         // ── CTA ────────────────────────────────────────────────────────────────
@@ -290,23 +291,22 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
             onPressed: widget.onConfirm,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.onPrimary,
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: AppRadius.borderSm,
               ),
             ),
-            child: const Text(
+            child: Text(
               '이 정보로 계속하기',
-              style: TextStyle(
-                fontSize: 16,
+              style: AppTextStyles.labelLarge.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
           ),
         ),
 
-        const SizedBox(height: 32),
+        const SizedBox(height: AppSpacing.xxxl),
       ],
     );
   }
@@ -322,7 +322,7 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.borderSm,
         border: Border.all(color: AppColors.border),
       ),
       child: TextField(
@@ -331,17 +331,14 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
         onChanged: onChanged,
-        style: const TextStyle(
-          fontSize: 14,
-          color: AppColors.textPrimary,
-        ),
+        style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: const TextStyle(
-            fontSize: 14,
-            color: AppColors.textDisabled,
+          hintStyle: AppTextStyles.bodyLarge.copyWith(color: AppColors.textTertiary),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: 10,
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           border: InputBorder.none,
           isDense: true,
         ),
@@ -351,21 +348,21 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
 
   Widget _buildCategoryDropdown() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.borderSm,
         border: Border.all(color: AppColors.border),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: _selectedCategory,
           isExpanded: true,
-          hint: const Text(
+          hint: Text(
             '카테고리를 선택하세요',
-            style: TextStyle(fontSize: 14, color: AppColors.textDisabled),
+            style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textTertiary),
           ),
-          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+          style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
           items: _categories
               .map((c) => DropdownMenuItem(value: c, child: Text(c)))
               .toList(),
@@ -383,14 +380,13 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: options.map((opt) {
         return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.only(bottom: AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 opt.name,
-                style: const TextStyle(
-                  fontSize: 13,
+                style: AppTextStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppColors.textSecondary,
                 ),
@@ -404,13 +400,12 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: AppColors.background,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: AppRadius.borderLg,
                       border: Border.all(color: AppColors.border),
                     ),
                     child: Text(
                       v,
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.textPrimary,
                       ),
                     ),
@@ -449,10 +444,10 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
     ];
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.borderSm,
         border: Border.all(color: AppColors.border),
       ),
       child: Wrap(
@@ -462,22 +457,23 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
           return SizedBox(
             width: 100,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.sm,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     item.label,
-                    style: const TextStyle(
-                      fontSize: 11,
+                    style: AppTextStyles.caption.copyWith(
                       color: AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     item.value,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: AppTextStyles.bodyLarge.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
@@ -507,14 +503,10 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
+          style: AppTextStyles.titleMedium,
         ),
         if (trailing != null) ...[
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(child: trailing!),
         ],
       ],
@@ -536,8 +528,7 @@ class _FieldLabel extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
+          style: AppTextStyles.bodyLarge.copyWith(
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
@@ -558,13 +549,9 @@ class _SectionDividerLabel extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
+          style: AppTextStyles.titleSmall,
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.md),
         const Expanded(
           child: Divider(color: AppColors.border, thickness: 1),
         ),
