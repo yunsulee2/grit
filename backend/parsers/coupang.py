@@ -72,11 +72,12 @@ def _parse_html(html: str, url: str) -> dict:
     soup = BeautifulSoup(html, "lxml")
     json_ld = _extract_json_ld(soup)
 
-    # productName
+    # productName — JSON-LD > new Tailwind h1 > old selectors > og:title
     if json_ld and json_ld.get("name"):
         result["productName"] = json_ld["name"]
     else:
         for sel in [
+            "h1.product-title",
             "h2.prod-buy-header__title",
             "span.prod-buy-header__title",
             "h1.prod-buy-header__title",
@@ -93,15 +94,23 @@ def _parse_html(html: str, url: str) -> dict:
                 title = re.sub(r"\s*[-|].*?쿠팡.*$", "", title)
                 result["productName"] = title
 
-    # brandName
-    brand_tag = soup.select_one("a.prod-brand-name")
-    if brand_tag:
-        result["brandName"] = brand_tag.get_text(strip=True)
-    elif json_ld and json_ld.get("brand"):
+    # brandName — JSON-LD > new brand-info > old selector
+    if json_ld and json_ld.get("brand"):
         brand = json_ld["brand"]
         result["brandName"] = brand.get("name", brand) if isinstance(brand, dict) else str(brand)
+    else:
+        brand_tag = soup.select_one("a.prod-brand-name")
+        if not brand_tag:
+            # New Tailwind layout: div.brand-info contains the brand name
+            brand_info = soup.select_one("div.brand-info")
+            if brand_info:
+                # Inner div has the clean name without "브랜드샵" suffix
+                inner = brand_info.select_one("div.twc-font-bold")
+                brand_tag = inner if inner else brand_info
+        if brand_tag:
+            result["brandName"] = brand_tag.get_text(strip=True)
 
-    # originalPrice
+    # originalPrice — JSON-LD > new Tailwind price > old selectors
     if json_ld and json_ld.get("offers"):
         offers = json_ld["offers"]
         if isinstance(offers, dict):
@@ -112,7 +121,11 @@ def _parse_html(html: str, url: str) -> dict:
                 except (ValueError, TypeError):
                     pass
     if not result["originalPrice"]:
+        # New Tailwind layout: div.price-amount.final-price-amount or div.final-price
         for sel in [
+            "div.price-amount.final-price-amount",
+            "div.final-price",
+            "div.price-container",
             "span.total-price strong",
             "span.origin-price",
             ".prod-sale-price .total-price",
@@ -129,11 +142,24 @@ def _parse_html(html: str, url: str) -> dict:
     if og_desc and og_desc.get("content"):
         result["description"] = og_desc["content"].strip()
 
-    # mainImage
-    og_image = soup.find("meta", property="og:image")
-    if og_image and og_image.get("content"):
-        result["mainImage"] = _normalize_image(og_image["content"])
-    else:
+    # mainImage — JSON-LD > new Product image alt > og:image > old selectors
+    if json_ld and json_ld.get("image"):
+        img_ld = json_ld["image"]
+        if isinstance(img_ld, list) and img_ld:
+            result["mainImage"] = _normalize_image(str(img_ld[0]))
+        elif isinstance(img_ld, str):
+            result["mainImage"] = _normalize_image(img_ld)
+    if not result["mainImage"]:
+        # New Tailwind layout: main product image has alt="Product image"
+        main_img = soup.select_one('img[alt="Product image"]')
+        if main_img:
+            src = main_img.get("src") or main_img.get("data-src")
+            result["mainImage"] = _normalize_image(src)
+    if not result["mainImage"]:
+        og_image = soup.find("meta", property="og:image")
+        if og_image and og_image.get("content"):
+            result["mainImage"] = _normalize_image(og_image["content"])
+    if not result["mainImage"]:
         for sel in ["div.prod-image img", "#repImageContainer img", "img.prod-image__detail"]:
             tag = soup.select_one(sel)
             if tag:
@@ -142,9 +168,10 @@ def _parse_html(html: str, url: str) -> dict:
                 if result["mainImage"]:
                     break
 
-    # galleryImages
+    # galleryImages — new Tailwind layout + old selectors
     gallery_imgs = (
-        soup.select("div.prod-image__items img")
+        soup.select("div.product-image img")
+        or soup.select("div.prod-image__items img")
         or soup.select("ul.prod-thumbnail__list img")
         or soup.select("li.prod-image__item img")
     )
@@ -152,14 +179,20 @@ def _parse_html(html: str, url: str) -> dict:
     for img in gallery_imgs:
         src = _normalize_image(img.get("src") or img.get("data-src"))
         if src and src not in gallery:
-            full = re.sub(r"/thumbnails/remote/\d+x\d+ex/", "/thumbnails/remote/600x600ex/", src)
+            # Upscale thumbnails (48x48 or any size) to 492x492
+            full = re.sub(r"/thumbnails/remote/\d+x\d+ex/", "/thumbnails/remote/492x492ex/", src)
             gallery.append(full)
     result["galleryImages"] = gallery
+    # If JSON-LD has images and gallery is empty, use those
+    if not gallery and json_ld and json_ld.get("image"):
+        img_ld = json_ld["image"]
+        if isinstance(img_ld, list):
+            result["galleryImages"] = [_normalize_image(u) for u in img_ld if u]
 
-    # detailImages
+    # detailImages — multiple container selectors (new + old)
     detail_container = (
-        soup.select_one("#productDetail")
-        or soup.select_one("div.product-detail-content-inside")
+        soup.select_one("div.product-detail-content-inside")
+        or soup.select_one("#productDetail")
         or soup.select_one("div.product-detail__content")
         or soup.select_one("#btfContent")
     )
@@ -169,7 +202,7 @@ def _parse_html(html: str, url: str) -> dict:
             src = _normalize_image(
                 img.get("src") or img.get("data-src") or img.get("data-img")
             )
-            if src and src not in details:
+            if src and src not in details and not src.endswith((".svg", ".gif", ".ico")):
                 details.append(src)
         result["detailImages"] = details
 
@@ -197,12 +230,32 @@ def _parse_html(html: str, url: str) -> dict:
                     result["weight"] = parts[i + 1].strip()
                     break
 
-    # options
-    option_items = soup.select("ul.prod-option__item li")
-    if option_items:
-        result["options"] = [
-            item.get_text(strip=True) for item in option_items if item.get_text(strip=True)
-        ]
+    # options — new Tailwind select-item (structured) + old selectors (flat)
+    select_items = soup.select("div.select-item")
+    if select_items:
+        opts = []
+        for item in select_items:
+            # Extract clean variant name from bold div
+            name_tag = item.select_one("div.twc-font-bold")
+            name = name_tag.get_text(strip=True) if name_tag else ""
+            # Extract price from strong.price-text
+            price_tag = item.select_one("strong.price-text")
+            price_text = price_tag.get_text(strip=True) if price_tag else ""
+            if name:
+                entry = name
+                if price_text:
+                    entry += f" ({price_text})"
+                opts.append(entry)
+        if opts:
+            result["options"] = opts
+    else:
+        option_items = soup.select("ul.prod-option__item li")
+        if option_items:
+            result["options"] = [
+                item.get_text(strip=True)
+                for item in option_items
+                if item.get_text(strip=True)
+            ]
 
     return result
 

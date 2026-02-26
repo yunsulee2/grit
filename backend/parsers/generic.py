@@ -111,17 +111,36 @@ def _extract_from_soup(soup: BeautifulSoup, url: str) -> dict:
 
     json_ld = _extract_json_ld(soup)
 
-    # productName
+    # productName — JSON-LD > HTML selectors > og:title > title tag
     if json_ld and json_ld.get("name"):
         result["productName"] = json_ld["name"]
     else:
-        og_title = soup.find("meta", property="og:title")
-        if og_title and og_title.get("content"):
-            result["productName"] = og_title["content"].strip()
-        else:
-            title_tag = soup.find("title")
-            if title_tag:
-                result["productName"] = title_tag.get_text(strip=True)
+        # Try common product name selectors first (more specific than og/title)
+        for sel in [
+            "h1[class*=product]", "h1[class*=goods]", "h1[class*=item]",
+            "h2[class*=product]", "h2[class*=goods]", "h2[class*=item]",
+            "[class*=product-name]", "[class*=product_name]",
+            "[class*=goods-name]", "[class*=goods_name]",
+            "[class*=item-name]", "[class*=item_name]",
+            "[itemprop=name]",
+            "h1", "h2",
+        ]:
+            tag = soup.select_one(sel)
+            if tag:
+                text = tag.get_text(strip=True)
+                # Skip very short or site-title-like names
+                if text and len(text) > 2 and len(text) < 200:
+                    result["productName"] = text
+                    break
+
+        if not result["productName"]:
+            og_title = soup.find("meta", property="og:title")
+            if og_title and og_title.get("content"):
+                result["productName"] = og_title["content"].strip()
+            else:
+                title_tag = soup.find("title")
+                if title_tag:
+                    result["productName"] = title_tag.get_text(strip=True)
 
     # brandName
     if json_ld and json_ld.get("brand"):
@@ -170,7 +189,7 @@ def _extract_from_soup(soup: BeautifulSoup, url: str) -> dict:
                 result["originalPrice"] = parsed
                 break
 
-    # mainImage
+    # mainImage — JSON-LD > product image selectors > og:image
     if json_ld and json_ld.get("image"):
         img = json_ld["image"]
         if isinstance(img, list):
@@ -178,9 +197,31 @@ def _extract_from_soup(soup: BeautifulSoup, url: str) -> dict:
         result["mainImage"] = _normalize_image(str(img)) if img else None
 
     if not result["mainImage"]:
+        # Try common product image selectors
+        for sel in [
+            "[class*=product-image] img", "[class*=product_image] img",
+            "[class*=goods-image] img", "[class*=goods_image] img",
+            "[class*=item-image] img", "[class*=item_image] img",
+            "[class*=prd-image] img", "[class*=prd_image] img",
+            "[class*=thumb-image] img", "[class*=main-image] img",
+            "[itemprop=image]",
+            "div.product img", "div.goods img",
+        ]:
+            tag = soup.select_one(sel)
+            if tag:
+                src = tag.get("src") or tag.get("data-src") or tag.get("content")
+                normalized = _normalize_image(src)
+                if normalized and "logo" not in normalized.lower():
+                    result["mainImage"] = normalized
+                    break
+
+    if not result["mainImage"]:
         og_image = soup.find("meta", property="og:image")
         if og_image and og_image.get("content"):
-            result["mainImage"] = _normalize_image(og_image["content"].strip())
+            img_url = _normalize_image(og_image["content"].strip())
+            # Skip obvious logos/icons
+            if img_url and "logo" not in img_url.lower() and "icon" not in img_url.lower():
+                result["mainImage"] = img_url
 
     # description
     og_desc = soup.find("meta", property="og:description")
@@ -288,10 +329,10 @@ async def _fetch_with_curl(url: str) -> str | None:
 
 
 async def _fetch_with_nodriver(url: str) -> str | None:
-    """Fetch page with nodriver (real Chrome, anti-detection)."""
+    """Fetch page with nodriver (real Chrome, anti-detection). Scrolls for lazy loading."""
     try:
         from parsers.browser import fetch_with_nodriver
-        html = await fetch_with_nodriver(url, wait_seconds=5)
+        html = await fetch_with_nodriver(url, wait_seconds=7)
         return html
     except Exception as e:
         print(f"[generic] nodriver failed: {e}")
@@ -325,8 +366,15 @@ async def _fetch_with_playwright(url: str) -> str | None:
             try:
                 await page.goto(url, wait_until="domcontentloaded", timeout=20000)
                 await page.wait_for_timeout(3000)
-                await page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2)")
-                await page.wait_for_timeout(1000)
+                # Scroll progressively to trigger lazy loading
+                for scroll_pct in [0.3, 0.5, 0.7, 1.0]:
+                    await page.evaluate(
+                        f"window.scrollTo(0, document.body.scrollHeight * {scroll_pct})"
+                    )
+                    await page.wait_for_timeout(800)
+                # Scroll back to top for main content
+                await page.evaluate("window.scrollTo(0, 0)")
+                await page.wait_for_timeout(500)
                 html = await page.content()
             finally:
                 await browser.close()
@@ -341,12 +389,26 @@ async def _fetch_with_playwright(url: str) -> str | None:
 
 
 def _has_meaningful_data(result: dict) -> bool:
-    """Check if extracted data has meaningful product info."""
+    """Check if extracted data has meaningful product info (not just site titles)."""
     name = result.get("productName")
     price = result.get("originalPrice")
     image = result.get("mainImage")
     detail_images = result.get("detailImages", [])
-    return bool(name and (price or image or detail_images))
+
+    if not name:
+        return False
+
+    # Reject obvious site titles (short generic names ending with 몰/샵/마켓 etc.)
+    name_lower = name.lower().strip()
+    site_title_indicators = ["몰", "샵", "마켓", "스토어", "공식몰", "공식 몰", "official"]
+    is_likely_site_title = (
+        len(name_lower) < 15
+        and any(name_lower.endswith(ind) for ind in site_title_indicators)
+    )
+    if is_likely_site_title and not price and not detail_images:
+        return False
+
+    return bool(price or image or detail_images)
 
 
 async def parse_generic(url: str) -> dict:
@@ -380,14 +442,24 @@ async def parse_generic(url: str) -> dict:
 
     # Layer 3: Playwright (JS rendering)
     print(f"[generic] Trying Playwright for {url}...")
+    playwright_result = None
     html = await _fetch_with_playwright(url)
     if html:
         soup = BeautifulSoup(html, "lxml")
-        result = _extract_from_soup(soup, url)
-        if _has_meaningful_data(result):
-            print(f"[generic] Playwright succeeded for {url}")
-            return result
-        print("[generic] Playwright got HTML but no meaningful data, escalating...")
+        playwright_result = _extract_from_soup(soup, url)
+        if _has_meaningful_data(playwright_result):
+            # Check if we got actual product data (not just site title + logo)
+            has_real_image = bool(
+                playwright_result.get("mainImage")
+                and "logo" not in (playwright_result["mainImage"] or "").lower()
+            )
+            has_detail = bool(playwright_result.get("detailImages"))
+            if has_real_image or has_detail:
+                print(f"[generic] Playwright succeeded for {url}")
+                return playwright_result
+            print("[generic] Playwright got partial data, trying nodriver for better results...")
+        else:
+            print("[generic] Playwright got HTML but no meaningful data, escalating...")
 
     # Layer 4: nodriver (real Chrome, anti-detection)
     print(f"[generic] Trying nodriver for {url}...")
@@ -399,7 +471,14 @@ async def parse_generic(url: str) -> dict:
             print(f"[generic] nodriver succeeded for {url}")
             return result
         print("[generic] nodriver got HTML but limited data")
+        # Return whichever result has more data
+        if playwright_result and _has_meaningful_data(playwright_result):
+            return playwright_result
         return result
+
+    # Return Playwright result if available (even partial)
+    if playwright_result:
+        return playwright_result
 
     raise RuntimeError(
         "이 사이트에서 상품 정보를 가져올 수 없습니다. "
