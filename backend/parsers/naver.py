@@ -414,6 +414,10 @@ async def parse_naver(url: str) -> dict:
     except ImportError:
         print("[naver] nodriver not available")
     except Exception as e:
+        # Let CaptchaRequiredError propagate to main.py for proper error code
+        from parsers.browser import CaptchaRequiredError
+        if isinstance(e, CaptchaRequiredError):
+            raise
         print(f"[naver] nodriver failed: {e}")
 
     raise RuntimeError(
