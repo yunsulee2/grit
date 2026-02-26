@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../services/scrape_service.dart';
 
 class ImageGridEditor extends StatefulWidget {
   final List<String> imageUrls;
@@ -187,8 +188,10 @@ class _ImageGridEditorState extends State<ImageGridEditor> {
         errorBuilder: (context, error, stack) => _buildErrorPlaceholder(),
       );
     }
+    // Use proxy for external URLs to avoid CORS
+    final displayUrl = ScrapeService.proxyImageUrl(url);
     return Image.network(
-      url,
+      displayUrl,
       fit: BoxFit.cover,
       errorBuilder: (context, error, stack) => _buildErrorPlaceholder(),
     );
