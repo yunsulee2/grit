@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../data/mock_data.dart';
 import '../models/fund.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
 import '../widgets/option_bottom_sheet.dart';
+import '../widgets/share_buttons.dart';
 import '../widgets/volume_pricing_bar.dart';
 import '../widgets/price_tier_label.dart';
 
@@ -102,6 +104,8 @@ class _FundDetailScreenState extends State<FundDetailScreen> {
           // 1. Brand top bar
           _BrandTopBar(
             brandName: fund.brandName,
+            fundId: fund.id,
+            productName: fund.productName,
             onBack: () => Navigator.pop(context),
           ),
 
@@ -220,9 +224,47 @@ class _FundDetailScreenState extends State<FundDetailScreen> {
 
 class _BrandTopBar extends StatelessWidget {
   final String brandName;
+  final String fundId;
+  final String productName;
   final VoidCallback onBack;
 
-  const _BrandTopBar({required this.brandName, required this.onBack});
+  const _BrandTopBar({
+    required this.brandName,
+    required this.fundId,
+    required this.productName,
+    required this.onBack,
+  });
+
+  void _onShare(BuildContext context) {
+    final shareUrl = 'https://grit.app/fund/$fundId';
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              productName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ShareButtons(shareUrl: shareUrl, productName: productName),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -278,15 +320,7 @@ class _BrandTopBar extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('링크가 복사되었습니다!'),
-                            behavior: SnackBarBehavior.floating,
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      },
+                      onPressed: () => _onShare(context),
                       icon: const Icon(
                         Icons.share_outlined,
                         size: 20,
@@ -506,20 +540,56 @@ class _ProductImageSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        // Thumbnail strip (single image repeated as placeholder)
-        SizedBox(
-          height: 64,
-          child: Row(
-            children: [
-              _Thumbnail(imageUrl: fund.imageUrl, isSelected: true),
-              const SizedBox(width: 8),
-              _Thumbnail(imageUrl: fund.imageUrl, isSelected: false),
-              const SizedBox(width: 8),
-              _Thumbnail(imageUrl: fund.imageUrl, isSelected: false),
-            ],
-          ),
-        ),
+        // Thumbnail strip — uses actual fund image only, no repetition
+        _ThumbnailStrip(imageUrl: fund.imageUrl),
       ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Thumbnail Strip — shows actual images without repetition
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _ThumbnailStrip extends StatefulWidget {
+  final String imageUrl;
+
+  const _ThumbnailStrip({required this.imageUrl});
+
+  @override
+  State<_ThumbnailStrip> createState() => _ThumbnailStripState();
+}
+
+class _ThumbnailStripState extends State<_ThumbnailStrip> {
+  int _selectedIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    // Build a list from the single imageUrl — no artificial repetition.
+    // If the model gains imageUrls in future, swap this list out.
+    final images = [widget.imageUrl];
+
+    if (images.isEmpty) return const SizedBox.shrink();
+
+    return SizedBox(
+      height: 64,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (int i = 0; i < images.length; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => setState(() => _selectedIndex = i),
+                child: _Thumbnail(
+                  imageUrl: images[i],
+                  isSelected: _selectedIndex == i,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -730,13 +800,17 @@ class _ProductInfoCenter extends StatelessWidget {
                 ),
                 GestureDetector(
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('링크가 복사되었습니다!'),
-                        behavior: SnackBarBehavior.floating,
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
+                    final url = 'https://grit.app/fund/${fund.id}';
+                    Clipboard.setData(ClipboardData(text: url)).then((_) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('링크가 복사되었습니다!'),
+                          behavior: SnackBarBehavior.floating,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    });
                   },
                   child: Container(
                     padding:

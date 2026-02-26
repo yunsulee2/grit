@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../services/fund_service.dart';
 
 class SellerApplyScreen extends StatefulWidget {
   const SellerApplyScreen({super.key});
@@ -29,42 +30,96 @@ class _SellerApplyScreenState extends State<SellerApplyScreen> {
     super.dispose();
   }
 
-  void _submit() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          '신청 완료',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        content: const Text(
-          '신청이 완료되었습니다!\n검토 후 영업일 3일 이내에 연락드리겠습니다.',
-          style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 0,
-            ),
-            child: const Text('확인'),
-          ),
-        ],
+  bool _isLoading = false;
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.accentRed,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
       ),
     );
+  }
+
+  Future<void> _submit() async {
+    // Validate required fields
+    if (_brandNameCtrl.text.trim().isEmpty) {
+      _showError('브랜드명을 입력해주세요.');
+      return;
+    }
+    if (_ownerNameCtrl.text.trim().isEmpty) {
+      _showError('대표자명을 입력해주세요.');
+      return;
+    }
+    if (_phoneCtrl.text.trim().isEmpty) {
+      _showError('연락처를 입력해주세요.');
+      return;
+    }
+    if (_bizNumberCtrl.text.trim().isEmpty) {
+      _showError('사업자등록번호를 입력해주세요.');
+      return;
+    }
+    if (_mainProductCtrl.text.trim().isEmpty) {
+      _showError('주요 판매 상품을 입력해주세요.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final success = await FundService.instance.submitSellerApplication({
+      'brandName': _brandNameCtrl.text.trim(),
+      'ownerName': _ownerNameCtrl.text.trim(),
+      'bizNumber': _bizNumberCtrl.text.trim(),
+      'phone': _phoneCtrl.text.trim(),
+      'channelUrl': _channelUrlCtrl.text.trim(),
+      'mainProduct': _mainProductCtrl.text.trim(),
+      'intro': _introCtrl.text.trim(),
+    });
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (success) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text(
+            '신청 완료',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          content: const Text(
+            '신청이 완료되었습니다!\n검토 후 영업일 3일 이내에 연락드리겠습니다.',
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
+              ),
+              child: const Text('확인'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   @override
@@ -151,22 +206,34 @@ class _SellerApplyScreenState extends State<SellerApplyScreen> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: _submit,
+                onPressed: _isLoading ? null : _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
+                  disabledBackgroundColor:
+                      AppColors.primary.withValues(alpha: 0.6),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  '입점 신청하기',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        '입점 신청하기',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
             const SizedBox(height: 32),

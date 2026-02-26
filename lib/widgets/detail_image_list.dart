@@ -188,7 +188,7 @@ class _DetailImageListState extends State<DetailImageList> {
             ],
           ),
         ] else ...[
-          // ── Text editor placeholder ─────────────────────────────────────────
+          // ── Text editor ─────────────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -201,13 +201,14 @@ class _DetailImageListState extends State<DetailImageList> {
               children: [
                 Row(
                   children: const [
-                    Icon(Icons.edit_note, color: AppColors.textSecondary, size: 18),
+                    Icon(Icons.edit_note, color: AppColors.primary, size: 18),
                     SizedBox(width: 6),
                     Text(
-                      '텍스트 에디터로 전환됩니다 (준비 중)',
+                      '상세페이지 직접 작성',
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textSecondary,
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -216,9 +217,9 @@ class _DetailImageListState extends State<DetailImageList> {
                 TextField(
                   controller: _textController,
                   maxLines: 6,
-                  enabled: false,
+                  enabled: true,
                   decoration: InputDecoration(
-                    hintText: '상세페이지 내용을 직접 입력하세요 (준비 중)',
+                    hintText: '상세페이지 내용을 입력하세요',
                     hintStyle: const TextStyle(
                       color: AppColors.textDisabled,
                       fontSize: 13,
@@ -229,9 +230,13 @@ class _DetailImageListState extends State<DetailImageList> {
                       borderRadius: BorderRadius.circular(6),
                       borderSide: const BorderSide(color: AppColors.border),
                     ),
-                    disabledBorder: OutlineInputBorder(
+                    enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(6),
                       borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6),
+                      borderSide: const BorderSide(color: AppColors.primary),
                     ),
                     contentPadding: const EdgeInsets.all(12),
                   ),
