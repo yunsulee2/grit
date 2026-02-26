@@ -11,6 +11,7 @@ from parsers.coupang import parse_coupang
 from parsers.naver import parse_naver
 from parsers.kakao import parse_kakao
 from parsers.generic import parse_generic
+from parsers.browser import CaptchaRequiredError
 
 app = FastAPI(title="Grit Scraping Server")
 
@@ -106,17 +107,17 @@ async def scrape(request: ScrapeRequest):
 
         return {"success": True, "data": data}
 
-    except RuntimeError as e:
-        # Check if it's a CAPTCHA error (from browser.CaptchaRequiredError)
-        error_str = str(e)
-        if "CAPTCHA" in error_str or "보안 확인" in error_str:
-            error_code = "CAPTCHA_REQUIRED"
-        else:
-            error_code = "BLOCKED"
+    except CaptchaRequiredError as e:
         return {
             "success": False,
-            "error": error_str,
-            "errorCode": error_code,
+            "error": str(e),
+            "errorCode": "CAPTCHA_REQUIRED",
+        }
+    except RuntimeError as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "errorCode": "BLOCKED",
         }
     except Exception as e:
         print(f"[scrape] Unexpected error for {url}: {e}")
