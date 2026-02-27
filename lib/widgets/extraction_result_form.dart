@@ -301,6 +301,7 @@ class _ExtractionResultFormState extends State<ExtractionResultForm> {
               '이 정보로 계속하기',
               style: AppTextStyles.labelLarge.copyWith(
                 fontWeight: FontWeight.w700,
+                color: AppColors.onPrimary,
               ),
             ),
           ),

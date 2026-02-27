@@ -11,6 +11,7 @@ import '../widgets/banner_carousel.dart';
 import '../widgets/category_tabs.dart';
 import '../widgets/filter_chips_bar.dart';
 import '../widgets/fund_card.dart';
+import '../widgets/fund_image.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -235,19 +236,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Product image
                 AspectRatio(
                   aspectRatio: 16 / 9,
-                  child: Image.asset(
-                    featured.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, _) => Container(
-                      color: AppColors.background,
-                      child: const Center(
-                        child: Icon(
-                          Icons.fastfood,
-                          size: 36,
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                    ),
+                  child: FundImage(
+                    imageUrl: featured.imageUrl,
+                    errorIcon: Icons.fastfood,
+                    errorIconSize: 36,
                   ),
                 ),
                 Padding(
@@ -362,19 +354,10 @@ class _UpcomingCard extends StatelessWidget {
             child: SizedBox(
               width: 60,
               height: 60,
-              child: Image.asset(
-                fund.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, _) => Container(
-                  color: AppColors.background,
-                  child: const Center(
-                    child: Icon(
-                      Icons.fastfood,
-                      size: 24,
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-                ),
+              child: FundImage(
+                imageUrl: fund.imageUrl,
+                errorIcon: Icons.fastfood,
+                errorIconSize: 24,
               ),
             ),
           ),

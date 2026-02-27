@@ -6,7 +6,6 @@ import 'screens/login_screen.dart';
 import 'screens/seller_dashboard_screen.dart';
 import 'screens/seller_fund_form_screen.dart';
 import 'screens/seller_apply_screen.dart';
-import 'screens/url_scrape_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/profile_edit_screen.dart';
 import 'screens/address_screen.dart';
@@ -62,9 +61,6 @@ class MyApp extends StatelessWidget {
           case '/seller/fund/new':
             return MaterialPageRoute(
                 builder: (_) => const SellerFundFormScreen());
-          case '/seller/fund/url-scrape':
-            return MaterialPageRoute(
-                builder: (_) => const UrlScrapeScreen());
           case '/seller/apply':
             return MaterialPageRoute(
                 builder: (_) => const SellerApplyScreen());

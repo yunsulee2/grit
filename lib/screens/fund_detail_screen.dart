@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../data/mock_data.dart';
 import '../models/fund.dart';
+import '../services/fund_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
@@ -14,6 +14,7 @@ import '../widgets/option_bottom_sheet.dart';
 import '../widgets/share_buttons.dart';
 import '../widgets/volume_pricing_bar.dart';
 import '../widgets/price_tier_label.dart';
+import '../widgets/fund_image.dart';
 
 class FundDetailScreen extends StatefulWidget {
   final String fundId;
@@ -29,8 +30,7 @@ class _FundDetailScreenState extends State<FundDetailScreen> {
   late Timer _timer;
   late Duration _remaining;
 
-  Fund? get _fund =>
-      mockFunds.where((f) => f.id == widget.fundId).firstOrNull;
+  Fund? get _fund => FundService.instance.getFundById(widget.fundId);
 
   @override
   void initState() {
@@ -485,19 +485,11 @@ class _ProductImageSection extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.asset(
-                  fund.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, _) => Container(
-                    color: AppColors.border,
-                    child: const Center(
-                      child: Icon(
-                        Icons.image_not_supported_outlined,
-                        size: 48,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
+                FundImage(
+                  imageUrl: fund.imageUrl,
+                  errorIcon: Icons.image_not_supported_outlined,
+                  errorIconSize: 48,
+                  errorBgColor: AppColors.border,
                 ),
                 // Timer badge — top left
                 Positioned(
@@ -611,13 +603,12 @@ class _Thumbnail extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(5),
-        child: Image.asset(
-          imageUrl,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, _) => Container(
-            color: AppColors.border,
-            child: const Icon(Icons.image, size: 20, color: AppColors.textSecondary),
-          ),
+        child: FundImage(
+          imageUrl: imageUrl,
+          errorIcon: Icons.image,
+          errorIconSize: 20,
+          errorBgColor: AppColors.border,
+          errorIconColor: AppColors.textSecondary,
         ),
       ),
     );
@@ -1372,11 +1363,12 @@ class _ProductDetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final description =
-        '${fund.brandName}의 ${fund.productName}입니다.\n\n'
-        '공동구매를 통해 더 많은 분들이 참여할수록 가격이 낮아집니다. '
-        '지금 바로 참여하고 목표 달성 시 최대 ${fund.discountPercent}% 할인된 가격으로 구매하세요.\n\n'
-        '신선하고 건강한 ${fund.category} 제품을 합리적인 가격으로 만나보세요.';
+    final description = fund.description.isNotEmpty
+        ? fund.description
+        : '${fund.brandName}의 ${fund.productName}입니다.\n\n'
+            '공동구매를 통해 더 많은 분들이 참여할수록 가격이 낮아집니다. '
+            '지금 바로 참여하고 목표 달성 시 최대 ${fund.discountPercent}% 할인된 가격으로 구매하세요.\n\n'
+            '신선하고 건강한 ${fund.category} 제품을 합리적인 가격으로 만나보세요.';
 
     return Container(
       decoration: BoxDecoration(
@@ -1403,27 +1395,41 @@ class _ProductDetailCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          // Placeholder detail image
-          Container(
-            height: 240,
-            decoration: BoxDecoration(
-              color: AppColors.border,
-              borderRadius: AppRadius.borderSm,
+          // Detail images from scraping (or placeholder)
+          if (fund.detailImages.isNotEmpty)
+            ...fund.detailImages.map((url) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: ClipRRect(
+                    borderRadius: AppRadius.borderSm,
+                    child: FundImage(
+                      imageUrl: url,
+                      errorIcon: Icons.image_outlined,
+                      errorIconSize: 44,
+                      errorBgColor: AppColors.border,
+                    ),
+                  ),
+                ))
+          else
+            Container(
+              height: 240,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: AppRadius.borderSm,
+              ),
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.image_outlined,
+                      size: 44, color: AppColors.textSecondary),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    '상품 상세 이미지 영역',
+                    style: AppTextStyles.bodyMedium,
+                  ),
+                ],
+              ),
             ),
-            alignment: Alignment.center,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.image_outlined,
-                    size: 44, color: AppColors.textSecondary),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  '상품 상세 이미지 영역',
-                  style: AppTextStyles.bodyMedium,
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../models/fund.dart';
 import '../models/extracted_product.dart';
+import '../models/scrape_job.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
@@ -10,7 +13,14 @@ import '../widgets/step_indicator.dart';
 import '../widgets/price_tier_input.dart';
 import '../widgets/price_tier_preview.dart';
 import '../widgets/responsive_container.dart';
+import '../widgets/url_input_field.dart';
+import '../widgets/scrape_progress.dart';
+import '../widgets/scrape_error_view.dart';
+import '../widgets/scrape_result_card.dart';
+import '../widgets/extraction_detail_sheet.dart';
 import '../services/fund_service.dart';
+import '../services/scrape_service.dart';
+import '../services/site_detector.dart';
 
 class SellerFundFormScreen extends StatefulWidget {
   const SellerFundFormScreen({super.key});
@@ -27,6 +37,9 @@ class _SellerFundFormScreenState extends State<SellerFundFormScreen> {
   final _productNameCtrl = TextEditingController();
   String _category = '닭가슴살';
   final _descriptionCtrl = TextEditingController();
+  String? _mainImageUrl;
+  String _brandName = '';
+  List<String> _detailImageUrls = [];
 
   // Step 2
   List<String> _options = ['기본'];
@@ -85,11 +98,8 @@ class _SellerFundFormScreenState extends State<SellerFundFormScreen> {
     }
   }
 
-  Future<void> _onUrlScrapeSelected() async {
-    final result = await Navigator.pushNamed(context, '/seller/fund/url-scrape');
-    if (result is ExtractedProduct) {
-      _applyExtractedProduct(result);
-    }
+  void _onScrapeResult(ExtractedProduct product) {
+    _applyExtractedProduct(product);
     setState(() => _currentStep = 1);
   }
 
@@ -112,6 +122,19 @@ class _SellerFundFormScreenState extends State<SellerFundFormScreen> {
       _options = product.options.value!
           .expand((opt) => opt.values.isNotEmpty ? opt.values : [opt.name])
           .toList();
+    }
+    // Store brand name
+    if (product.brandName.value != null && product.brandName.value!.isNotEmpty) {
+      _brandName = product.brandName.value!;
+    }
+    // Store main image URL for fund submission
+    if (product.mainImage.value != null && product.mainImage.value!.isNotEmpty) {
+      _mainImageUrl = ScrapeService.proxyImageUrl(product.mainImage.value!);
+    }
+    // Store detail images (proxied)
+    final details = product.detailImages.value;
+    if (details != null && details.isNotEmpty) {
+      _detailImageUrls = details.map((url) => ScrapeService.proxyImageUrl(url)).toList();
     }
   }
 
@@ -165,6 +188,7 @@ class _SellerFundFormScreenState extends State<SellerFundFormScreen> {
 
     final success = await FundService.instance.submitFund({
       'productName': _productNameCtrl.text.trim(),
+      'brandName': _brandName,
       'category': _category,
       'description': _descriptionCtrl.text.trim(),
       'options': _options,
@@ -180,6 +204,8 @@ class _SellerFundFormScreenState extends State<SellerFundFormScreen> {
       'maxParticipants': _maxParticipantsCtrl.text.trim(),
       'shippingFee': _shippingFeeCtrl.text.trim(),
       'shippingMethod': _shippingMethod,
+      'mainImage': _mainImageUrl,
+      'detailImages': _detailImageUrls,
     });
 
     if (!mounted) return;
@@ -193,9 +219,8 @@ class _SellerFundFormScreenState extends State<SellerFundFormScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-      // Navigate to seller dashboard
+      // Navigate back to seller dashboard (tab index 2 in AppShell)
       Navigator.of(context).popUntil((route) => route.isFirst);
-      Navigator.pushNamed(context, '/seller/dashboard');
     }
   }
 
@@ -230,7 +255,7 @@ class _SellerFundFormScreenState extends State<SellerFundFormScreen> {
                 index: _currentStep,
                 children: [
                   _Step0(
-                    onUrlScrape: _onUrlScrapeSelected,
+                    onScrapeResult: _onScrapeResult,
                     onManual: () => setState(() => _currentStep = 1),
                   ),
                   _Step1(
@@ -294,13 +319,117 @@ class _SellerFundFormScreenState extends State<SellerFundFormScreen> {
   }
 }
 
-// ─── Step 0: 등록 방식 선택 ────────────────────────────────────────────────────
+// ─── Step 0: 등록 방식 선택 (인라인 스크래핑) ─────────────────────────────────────
 
-class _Step0 extends StatelessWidget {
-  final VoidCallback onUrlScrape;
+enum _Step0Phase { choose, input, loading, result, error }
+
+class _Step0 extends StatefulWidget {
+  final ValueChanged<ExtractedProduct> onScrapeResult;
   final VoidCallback onManual;
 
-  const _Step0({required this.onUrlScrape, required this.onManual});
+  const _Step0({required this.onScrapeResult, required this.onManual});
+
+  @override
+  State<_Step0> createState() => _Step0State();
+}
+
+class _Step0State extends State<_Step0> {
+  _Step0Phase _phase = _Step0Phase.choose;
+
+  // Loading state
+  int _currentStep = 0;
+  String _progressMessage = '';
+  int _estimatedSeconds = 0;
+
+  // Result state
+  ExtractedProduct? _extractedProduct;
+
+  // Error state
+  ScrapeErrorCode? _errorCode;
+  String? _errorMessage;
+
+  StreamSubscription<ScrapeJob>? _subscription;
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  void _onUrlSubmit(String url, SupportedSite site) {
+    _subscription?.cancel();
+
+    setState(() {
+      _phase = _Step0Phase.loading;
+      _currentStep = 0;
+      _progressMessage = '';
+      _estimatedSeconds = site == SupportedSite.naver ? 30 : 9;
+    });
+
+    _subscription = ScrapeService.startScraping(url).listen(
+      (job) {
+        if (!mounted) return;
+        switch (job.status) {
+          case ScrapeStatus.pending:
+          case ScrapeStatus.crawling:
+          case ScrapeStatus.parsing:
+          case ScrapeStatus.processing:
+            setState(() {
+              _phase = _Step0Phase.loading;
+              _currentStep = job.progress?.step ?? 0;
+              _progressMessage = job.progress?.message ?? '';
+              _estimatedSeconds = job.estimatedSeconds;
+            });
+          case ScrapeStatus.done:
+            setState(() {
+              _phase = _Step0Phase.result;
+              _extractedProduct = job.result;
+            });
+          case ScrapeStatus.failed:
+            setState(() {
+              _phase = _Step0Phase.error;
+              _errorCode = job.errorCode;
+              _errorMessage = job.errorMessage;
+            });
+        }
+      },
+      onError: (_) {
+        if (!mounted) return;
+        setState(() {
+          _phase = _Step0Phase.error;
+          _errorCode = ScrapeErrorCode.parseError;
+          _errorMessage = null;
+        });
+      },
+    );
+  }
+
+  void _onCancel() {
+    _subscription?.cancel();
+    setState(() => _phase = _Step0Phase.input);
+  }
+
+  void _onRetry() {
+    setState(() {
+      _phase = _Step0Phase.input;
+      _errorCode = null;
+      _errorMessage = null;
+    });
+  }
+
+  void _onAcceptResult() {
+    if (_extractedProduct != null) {
+      widget.onScrapeResult(_extractedProduct!);
+    }
+  }
+
+  Future<void> _onEditResult() async {
+    if (_extractedProduct == null) return;
+    final edited = await ExtractionDetailSheet.show(context, _extractedProduct!);
+    if (edited != null && mounted) {
+      widget.onScrapeResult(edited);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -309,139 +438,180 @@ class _Step0 extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _StepTitle('등록 방식 선택'),
+          const _StepTitle('상품 등록'),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            '상품을 어떻게 등록하시겠어요?',
+            _phase == _Step0Phase.choose
+                ? '상품을 어떻게 등록하시겠어요?'
+                : '쇼핑몰에서 상품 링크를 복사해 붙여넣기 해주세요',
             style: AppTextStyles.bodyLarge.copyWith(
               color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: AppSpacing.xxl),
-          GestureDetector(
-            onTap: onUrlScrape,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                border: Border.all(color: AppColors.primary, width: 2),
-                borderRadius: AppRadius.borderMd,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.sm),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: AppRadius.borderSm,
+
+          // Phase: Choose method
+          if (_phase == _Step0Phase.choose) ...[
+            // Link paste option (primary)
+            GestureDetector(
+              onTap: () => setState(() => _phase = _Step0Phase.input),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  border: Border.all(color: AppColors.primary, width: 2),
+                  borderRadius: AppRadius.borderMd,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(AppSpacing.sm),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: AppRadius.borderSm,
+                          ),
+                          child: const Icon(
+                            Icons.content_paste,
+                            color: AppColors.primary,
+                            size: 22,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.link,
-                          color: AppColors.primary,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  'URL로 빠른 등록',
-                                  style: AppTextStyles.titleSmall,
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              const Text(
+                                '링크로 빠른 등록',
+                                style: AppTextStyles.titleSmall,
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.sm, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  borderRadius: AppRadius.borderFull,
                                 ),
-                                SizedBox(width: AppSpacing.sm),
-                                _RecommendedBadge(),
-                              ],
-                            ),
-                          ],
+                                child: Text(
+                                  '추천',
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                    color: AppColors.onPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '기존 쇼핑몰 URL을 붙여넣으면 자동으로 상품 정보를 가져옵니다',
-                    style: AppTextStyles.bodyMedium,
-                  ),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      '쇼핑몰 상품 링크를 붙여넣으면 자동으로 상품 정보를 가져와요',
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          GestureDetector(
-            onTap: onManual,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                border: Border.all(color: AppColors.border),
-                borderRadius: AppRadius.borderMd,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.sm),
-                        decoration: BoxDecoration(
-                          color: AppColors.background,
-                          borderRadius: AppRadius.borderSm,
-                        ),
-                        child: const Icon(
-                          Icons.edit_outlined,
-                          color: AppColors.textSecondary,
-                          size: 22,
-                        ),
+            const SizedBox(height: AppSpacing.md),
+            // Manual input option
+            GestureDetector(
+              onTap: widget.onManual,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  border: Border.all(color: AppColors.border),
+                  borderRadius: AppRadius.borderMd,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.sm),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: AppRadius.borderSm,
                       ),
-                      const SizedBox(width: AppSpacing.md),
-                      const Text(
-                        '직접 입력',
-                        style: AppTextStyles.titleSmall,
+                      child: const Icon(
+                        Icons.edit_outlined,
+                        color: AppColors.textSecondary,
+                        size: 22,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '상품 정보를 처음부터 직접 입력합니다',
-                    style: AppTextStyles.bodyMedium,
-                  ),
-                ],
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('직접 입력', style: AppTextStyles.titleSmall),
+                          SizedBox(height: 4),
+                          Text(
+                            '상품 정보를 처음부터 직접 입력해요',
+                            style: AppTextStyles.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
+
+          // Phase: Link input
+          if (_phase == _Step0Phase.input)
+            UrlInputField(onSubmit: _onUrlSubmit),
+
+          // Phase: Loading
+          if (_phase == _Step0Phase.loading)
+            ScrapeProgressView(
+              currentStep: _currentStep,
+              message: _progressMessage,
+              estimatedSeconds: _estimatedSeconds,
+              onCancel: _onCancel,
+            ),
+
+          // Phase: Result
+          if (_phase == _Step0Phase.result && _extractedProduct != null)
+            ScrapeResultCard(
+              product: _extractedProduct!,
+              onAccept: _onAcceptResult,
+              onEdit: _onEditResult,
+            ),
+
+          // Phase: Error
+          if (_phase == _Step0Phase.error)
+            ScrapeErrorView(
+              errorCode: _errorCode ?? ScrapeErrorCode.parseError,
+              errorMessage: _errorMessage,
+              onRetry: _onRetry,
+              onManualInput: widget.onManual,
+            ),
+
+          // Back to method selection (when not in choose phase)
+          if (_phase != _Step0Phase.choose && _phase != _Step0Phase.loading) ...[
+            const SizedBox(height: AppSpacing.xl),
+            Center(
+              child: GestureDetector(
+                onTap: () => setState(() => _phase = _Step0Phase.choose),
+                child: Text(
+                  '← 다른 방법으로 등록하기',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                    decoration: TextDecoration.underline,
+                    decorationColor: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
-      ),
-    );
-  }
-}
-
-class _RecommendedBadge extends StatelessWidget {
-  const _RecommendedBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: AppRadius.borderFull,
-      ),
-      child: Text(
-        '추천',
-        style: AppTextStyles.labelSmall.copyWith(
-          color: AppColors.onPrimary,
-          fontWeight: FontWeight.bold,
-        ),
       ),
     );
   }
@@ -558,9 +728,9 @@ class _Step1 extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           const _FormLabel('카테고리'),
           const SizedBox(height: 6),
-          _StyledDropdown<String>(
+          _CategoryInput(
             value: category,
-            items: categories,
+            suggestions: categories,
             onChanged: onCategoryChanged,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -1010,6 +1180,11 @@ class _Step5 extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.xxl),
+          // Ownership confirmation
+          _OwnershipCheckbox(
+            onChanged: (_) {},
+          ),
+          const SizedBox(height: AppSpacing.lg),
           ElevatedButton(
             onPressed: isSubmitting ? null : onSubmit,
             style: ElevatedButton.styleFrom(
@@ -1198,6 +1373,191 @@ class _StyledTextField extends StatelessWidget {
         filled: true,
         fillColor: AppColors.surface,
       ),
+    );
+  }
+}
+
+class _OwnershipCheckbox extends StatefulWidget {
+  final ValueChanged<bool> onChanged;
+  const _OwnershipCheckbox({required this.onChanged});
+
+  @override
+  State<_OwnershipCheckbox> createState() => _OwnershipCheckboxState();
+}
+
+class _OwnershipCheckboxState extends State<_OwnershipCheckbox> {
+  bool _checked = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        setState(() => _checked = !_checked);
+        widget.onChanged(_checked);
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: AppRadius.borderSm,
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: Checkbox(
+                value: _checked,
+                onChanged: (v) {
+                  setState(() => _checked = v ?? false);
+                  widget.onChanged(_checked);
+                },
+                activeColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.border, width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppRadius.borderXs,
+                ),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                '등록하는 상품은 본인이 판매 권한을 가진 상품입니다',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryInput extends StatefulWidget {
+  final String value;
+  final List<String> suggestions;
+  final ValueChanged<String?> onChanged;
+
+  const _CategoryInput({
+    required this.value,
+    required this.suggestions,
+    required this.onChanged,
+  });
+
+  @override
+  State<_CategoryInput> createState() => _CategoryInputState();
+}
+
+class _CategoryInputState extends State<_CategoryInput> {
+  late TextEditingController _ctrl;
+  bool _showSuggestions = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.value);
+  }
+
+  @override
+  void didUpdateWidget(_CategoryInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value && _ctrl.text != widget.value) {
+      _ctrl.text = widget.value;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = widget.suggestions
+        .where((s) => _ctrl.text.isEmpty || s.contains(_ctrl.text))
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _ctrl,
+          onChanged: (v) {
+            setState(() => _showSuggestions = v.isNotEmpty);
+            widget.onChanged(v);
+          },
+          onTap: () => setState(() => _showSuggestions = true),
+          decoration: InputDecoration(
+            hintText: '카테고리를 입력하거나 선택하세요',
+            hintStyle: AppTextStyles.bodyLarge.copyWith(
+              color: AppColors.textTertiary,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.md),
+            border: OutlineInputBorder(
+              borderRadius: AppRadius.borderSm,
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppRadius.borderSm,
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppRadius.borderSm,
+              borderSide: const BorderSide(color: AppColors.primary),
+            ),
+            filled: true,
+            fillColor: AppColors.surface,
+            suffixIcon: const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+          ),
+        ),
+        if (_showSuggestions && filtered.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: filtered.map((s) {
+              final selected = s == _ctrl.text;
+              return GestureDetector(
+                onTap: () {
+                  _ctrl.text = s;
+                  widget.onChanged(s);
+                  setState(() => _showSuggestions = false);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppColors.primary.withValues(alpha: 0.1)
+                        : AppColors.surface,
+                    borderRadius: AppRadius.borderFull,
+                    border: Border.all(
+                      color: selected ? AppColors.primary : AppColors.border,
+                    ),
+                  ),
+                  child: Text(
+                    s,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: selected ? AppColors.primary : AppColors.textPrimary,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ],
     );
   }
 }
