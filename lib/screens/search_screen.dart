@@ -6,6 +6,7 @@ import '../theme/app_radius.dart';
 import '../widgets/responsive_container.dart';
 import '../data/mock_data.dart';
 import '../models/fund.dart';
+import '../widgets/fund_image.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -331,19 +332,10 @@ class _SearchResultTile extends StatelessWidget {
               child: SizedBox(
                 width: 64,
                 height: 64,
-                child: Image.asset(
-                  fund.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, _) => Container(
-                    color: AppColors.background,
-                    child: const Center(
-                      child: Icon(
-                        Icons.fastfood,
-                        size: 28,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                  ),
+                child: FundImage(
+                  imageUrl: fund.imageUrl,
+                  errorIcon: Icons.fastfood,
+                  errorIconSize: 28,
                 ),
               ),
             ),

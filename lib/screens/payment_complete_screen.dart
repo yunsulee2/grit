@@ -8,6 +8,7 @@ import '../data/mock_data.dart';
 import '../models/fund.dart';
 import '../widgets/share_buttons.dart';
 import '../utils/formatters.dart';
+import '../widgets/fund_image.dart';
 
 class PaymentCompleteScreen extends StatelessWidget {
   final String fundId;
@@ -116,19 +117,13 @@ class PaymentCompleteScreen extends StatelessWidget {
                               children: [
                                 ClipRRect(
                                   borderRadius: AppRadius.borderSm,
-                                  child: Image.asset(
-                                    fund.imageUrl,
+                                  child: FundImage(
+                                    imageUrl: fund.imageUrl,
                                     width: 64,
                                     height: 64,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stack) =>
-                                        Container(
-                                      width: 64,
-                                      height: 64,
-                                      color: AppColors.background,
-                                      child: const Icon(Icons.image,
-                                          color: AppColors.textSecondary),
-                                    ),
+                                    errorIcon: Icons.image,
+                                    errorIconSize: 24,
+                                    errorIconColor: AppColors.textSecondary,
                                   ),
                                 ),
                                 const SizedBox(width: AppSpacing.md),

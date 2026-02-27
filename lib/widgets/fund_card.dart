@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'fund_image.dart';
 import '../models/fund.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
@@ -105,19 +106,10 @@ class _FundCardState extends State<FundCard> {
                       topLeft: Radius.circular(12),
                       topRight: Radius.circular(12),
                     ),
-                    child: Image.asset(
-                      fund.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, _) => Container(
-                        color: AppColors.surface,
-                        child: const Center(
-                          child: Icon(
-                            Icons.fastfood,
-                            size: 40,
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                      ),
+                    child: FundImage(
+                      imageUrl: fund.imageUrl,
+                      errorIcon: Icons.fastfood,
+                      errorBgColor: AppColors.surface,
                     ),
                   ),
 
@@ -238,14 +230,20 @@ class _FundCardState extends State<FundCard> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      Text(
-                        _formatPrice(fund.startPrice),
-                        style: AppTextStyles.priceCard,
+                      Flexible(
+                        child: Text(
+                          _formatPrice(fund.startPrice),
+                          style: AppTextStyles.priceCard,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       const SizedBox(width: AppSpacing.xs),
-                      Text(
-                        _formatPrice(fund.targetPrice),
-                        style: AppTextStyles.priceStrike,
+                      Flexible(
+                        child: Text(
+                          _formatPrice(fund.targetPrice),
+                          style: AppTextStyles.priceStrike,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),

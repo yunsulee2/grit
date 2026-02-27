@@ -67,7 +67,7 @@ class _DetailImageListState extends State<DetailImageList> {
     if (url.startsWith('assets/')) {
       return Image.asset(
         url,
-        fit: BoxFit.cover,
+        fit: BoxFit.fitWidth,
         width: double.infinity,
         errorBuilder: (context, error, stack) => _buildErrorPlaceholder(),
       );
@@ -75,8 +75,18 @@ class _DetailImageListState extends State<DetailImageList> {
     final displayUrl = ScrapeService.proxyImageUrl(url);
     return Image.network(
       displayUrl,
-      fit: BoxFit.cover,
+      fit: BoxFit.fitWidth,
       width: double.infinity,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Container(
+          height: 200,
+          color: AppColors.background,
+          child: const Center(
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        );
+      },
       errorBuilder: (context, error, stack) => _buildErrorPlaceholder(),
     );
   }
@@ -262,21 +272,18 @@ class _DetailImageListState extends State<DetailImageList> {
             // ── Full-width image ─────────────────────────────────────────────
             _buildImage(url),
 
-            // ── Drag handle (left) ───────────────────────────────────────────
+            // ── Drag handle (top-left, compact) ────────────────────────────────
             Positioned(
-              top: 0,
-              left: 0,
-              bottom: 0,
+              top: AppSpacing.sm,
+              left: AppSpacing.sm,
               child: Container(
-                width: 36,
-                color: Colors.black.withValues(alpha: 0.18),
-                child: const Center(
-                  child: Icon(
-                    Icons.drag_handle,
-                    color: AppColors.textInverse,
-                    size: 20,
-                  ),
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  shape: BoxShape.circle,
                 ),
+                child: const Icon(Icons.drag_handle, size: 16, color: AppColors.textInverse),
               ),
             ),
 
@@ -301,7 +308,7 @@ class _DetailImageListState extends State<DetailImageList> {
             // ── Image number label (bottom-left) ─────────────────────────────
             Positioned(
               bottom: AppSpacing.sm,
-              left: 44,
+              left: AppSpacing.sm,
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.sm,

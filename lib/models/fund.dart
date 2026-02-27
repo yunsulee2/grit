@@ -11,6 +11,8 @@ class Fund {
   final String brandName;
   final String category;
   final String imageUrl;
+  final String description;
+  final List<String> detailImages;
   final int startPrice;
   final int targetPrice;
   final List<PriceTier> tiers;
@@ -26,6 +28,8 @@ class Fund {
     required this.brandName,
     required this.category,
     required this.imageUrl,
+    this.description = '',
+    this.detailImages = const [],
     required this.startPrice,
     required this.targetPrice,
     required this.tiers,

@@ -8,6 +8,7 @@ import '../models/fund.dart';
 import '../widgets/status_badge.dart';
 import '../utils/formatters.dart';
 import '../widgets/responsive_container.dart';
+import '../widgets/fund_image.dart';
 
 class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
@@ -270,17 +271,13 @@ class _OrderCard extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: AppRadius.borderSm,
-            child: Image.asset(
-              fund.imageUrl,
+            child: FundImage(
+              imageUrl: fund.imageUrl,
               width: 56,
               height: 56,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stack) => Container(
-                width: 56,
-                height: 56,
-                color: AppColors.background,
-                child: const Icon(Icons.image, color: AppColors.textSecondary),
-              ),
+              errorIcon: Icons.image,
+              errorIconSize: 24,
+              errorIconColor: AppColors.textSecondary,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
